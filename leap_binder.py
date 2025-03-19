@@ -1,6 +1,6 @@
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss
 from ultralytics.tensorleap_folder.config import cfg
-from ultralytics.tensorleap_folder.utils import create_data_with_ult
+from ultralytics.tensorleap_folder.utils import create_data_with_ult,pre_process_dataloader
 from typing import List
 import numpy as np
 from code_loader.contract.visualizer_classes import LeapImageWithBBox
@@ -16,20 +16,22 @@ from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_prep
 
 @tensorleap_preprocess()
 def preprocess_func_leap() -> List[PreprocessResponse]:
-    imgs, clss, bboxes, batch_idxs=create_data_with_ult(cfg,phase='val')
+    data_loader_val,n_sampels_val, predictor=create_data_with_ult(cfg,phase='val')
+    data_loader_train,n_sampels_train=create_data_with_ult(cfg,phase='train')
 
-
-    train = PreprocessResponse(sample_ids=np.arange(imgs.shape[0]), data={'imgs':imgs, 'clss':clss, 'bboxes':bboxes, 'batch_idxs':batch_idxs},sample_id_type=int,state=DataStateType.training)
-    val = PreprocessResponse(sample_ids=np.arange(imgs.shape[0]), data={'imgs':imgs, 'clss':clss, 'bboxes':bboxes, 'batch_idxs':batch_idxs},sample_id_type=int)
-
-    response = [train, val]
+    # imgs_train, clss_train, bboxes_train, batch_idxs_train=create_data_with_ult(cfg,phase='train')
+    val = PreprocessResponse(sample_ids=np.arange(n_sampels_val), data={'dataloader':data_loader_val, 'predictor':predictor},sample_id_type=int)
+    train = PreprocessResponse(sample_ids=np.arange(n_sampels_train), data={'dataloader':data_loader_train, 'predictor':predictor},sample_id_type=int, state=DataStateType.training)
+    response = [val,train]
     return response
 
 # Input encoder fetches the image with the index `idx` from the `images` array set in
 # the PreprocessResponse data. Returns a numpy array containing the sample's image.
 @tensorleap_input_encoder('image')
 def input_encoder(idx: int, preprocess: PreprocessResponse) -> np.ndarray:
-    return preprocess.data['imgs'][idx].astype('float32')
+    imgs, _, _, _ =pre_process_dataloader(preprocess, idx)
+
+    return imgs.astype('float32')
 
 
 # Ground truth encoder fetches the label with the index `idx` from the `labels` array set in
@@ -45,10 +47,8 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
         Output: bounding_boxes (np.ndarray): An array of bounding boxes extracted from the instance segmentation polygons in
                 the JSON data. Each bounding box is represented as an array containing [x_center, y_center, width, height, label].
         """
-    mask=preprocessing.data['batch_idxs']==idx
-    cls=preprocessing.data['clss'][mask]
-    bboxes=preprocessing.data['bboxes'][mask]
-    return np.concatenate([bboxes,cls],axis=1)
+    _, clss, bboxes, _=pre_process_dataloader(preprocessing, idx)
+    return np.concatenate([bboxes,clss],axis=1)
 
 
 # Metadata functions allow to add extra data for a later use in analysis.
@@ -86,7 +86,7 @@ def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
 @tensorleap_custom_visualizer('image_visualizer', LeapDataType.Image)
 def image_visualizer(image: np.ndarray) -> LeapImage:
 
-    return LeapImage((image.transpose(1,2,0)).astype(np.uint8), compress=False)
+    return LeapImage((image.transpose(1,2,0)), compress=False)
 
 @tensorleap_custom_visualizer("bb_decoder", LeapDataType.ImageWithBBox)
 def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
