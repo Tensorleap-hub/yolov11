@@ -4,11 +4,11 @@
 # For documentation see https://docs.ultralytics.com/usage/cfg/
 
 task: detect # (str) YOLO task, i.e. detect, segment, classify, pose, obb
-mode: train # (str) YOLO mode, i.e. train, val, predict, export, track, benchmark
+mode: val # (str) YOLO mode, i.e. train, val, predict, export, track, benchmark
 
 # Train settings -------------------------------------------------------------------------------------------------------
 model: # (str, optional) path to model file, i.e. yolov8n.pt, yolov8n.yaml
-data: # (str, optional) path to data file, i.e. coco8.yaml
+data: coco.yaml # (str, optional) path to data file, i.e. coco8.yaml
 epochs: 100 # (int) number of epochs to train for
 time: # (float, optional) number of hours to train for, overrides epochs if supplied
 patience: 100 # (int) epochs to wait for no observable improvement for early stopping of training
@@ -85,7 +85,7 @@ int8: False # (bool) CoreML/TF INT8 quantization
 dynamic: False # (bool) ONNX/TF/TensorRT: dynamic axes
 simplify: True # (bool) ONNX: simplify model using `onnxslim`
 opset: # (int, optional) ONNX: opset version
-workspace: None # (float, optional) TensorRT: workspace size (GiB), `None` will let TensorRT auto-allocate memory
+workspace: 0 # (float, optional) TensorRT: workspace size (GiB), `None` will let TensorRT auto-allocate memory
 nms: False # (bool) CoreML: add NMS
 
 # Hyperparameters ------------------------------------------------------------------------------------------------------
