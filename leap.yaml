@@ -1,0 +1,36 @@
+codeIntegrationId: 67ce9f07fd3378c34d0eab38
+projectId: 67ceff0d7c39706543d16ead
+secretId: ""
+branch: master
+entryFile: leap_binder.py
+include:
+    - leap_binder.py
+    - leap_custom_test.py
+    - config.py
+    - requirements.txt
+    - ultralytics/tensorleap_folder/utils.py
+    - ultralytics/tensorleap_folder/config.py
+
+    - tests/*.py
+    - ultralytics/*.py
+    - ultralytics/cfg/datasets/coco.yaml
+    - ultralytics/cfg/default.yaml
+    - ultralytics/cfg/models/11/*.yaml
+    - ultralytics/data/*.py
+    - ultralytics/data/scripts/*.sh
+    - ultralytics/engine/*.py
+    - ultralytics/hub/*.py
+    - ultralytics/data/google/*.py
+    - ultralytics/model/*.py
+    - ultralytics/model/**/*.py
+    - ultralytics/model/***/*.py
+    - ultralytics/nn/*.py
+    - ultralytics/nn/**/*.py
+    - ultralytics/solutions/*.py
+    - ultralytics/trackers/*.py
+    - ultralytics/trackers/**/*.py
+    - ultralytics/trackers/*.md
+    - ultralytics/utils/*.py
+    - ultralytics/utils/**/*.py
+
+

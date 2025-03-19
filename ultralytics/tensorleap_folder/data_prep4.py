@@ -30,7 +30,7 @@ dataset_path="coco.yaml"
 
 callbacks = callbacks.get_default_callbacks()
 data =check_det_dataset(dataset_path, autodownload=True)
-dataset=build_yolo_dataset(cfg, data['train'], 1, data, mode='val', stride=32)
+dataset=build_yolo_dataset(cfg, data['val'], 1, data, mode='val', stride=32)
 dataloader=build_dataloader(dataset, 1, 0, shuffle=False, rank=-1)# build_yolo_dataset(self.args, img_path, batch, self.data, mode=mode, stride=self.stride)
 
 
@@ -45,8 +45,8 @@ predictor.dataloader=dataloader
 predictor_pred = DetectionPredictor(overrides=cfg)
 
 # 4. Load model
-model_pt = YOLO("tensorleap_folder/yolo11n.pt").model
-model_path = r"/Users/yamtawachi/tensorleap/ultralytics/yolo11s.h5"
+model_pt = YOLO("yolo11n.pt").model
+model_path = r"/Users/yamtawachi/tensorleap/ultralytics/yolov11s.h5"
 model_tf = tf.keras.models.load_model(model_path)
 predictor.init_metrics(de_parallel(model_pt))
 

@@ -1,17 +1,7 @@
-# from coremltools.converters.mil.testing_reqs import tf
-# from matplotlib import pyplot as plt
 import os
-
-from ultralytics.data import build_dataloader, build_yolo_dataset, converter
-# from ultralytics.models.yolo.model import YOLO
+from ultralytics.data import  build_yolo_dataset
 from ultralytics.data.utils import check_det_dataset
-# from ultralytics.data.dataset import YOLODataset
-# from ultralytics.data.converter import convert_coco
 from ultralytics.data.build import build_dataloader
-# from ultralytics.utils import callbacks
-# from ultralytics.models.yolo.detect.val import DetectionValidator
-# from ultralytics.utils.torch_utils import de_parallel
-# import copy
 from ultralytics.utils.__init__ import yaml_load
 
 def metadata_label(digit_int) -> int:
