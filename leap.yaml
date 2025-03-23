@@ -12,6 +12,8 @@ include:
     - ultralytics/tensorleap_folder/config.py
     - tests/*.py
     - ultralytics/*.py
+    - ultralytics/cfg/*.py
+    - ultralytics/cfg/solutions/*.yaml
     - ultralytics/cfg/datasets/coco.yaml
     - ultralytics/cfg/default.yaml
     - ultralytics/cfg/models/11/*.yaml
@@ -20,9 +22,19 @@ include:
     - ultralytics/engine/*.py
     - ultralytics/hub/*.py
     - ultralytics/data/google/*.py
-    - ultralytics/model/*.py
-    - ultralytics/model/**/*.py
-    - ultralytics/model/***/*.py
+    - ultralytics/models/*.py
+    - ultralytics/models/yolo/*.py
+    - ultralytics/models/yolo/**/*.py
+    - ultralytics/models/fastsam/*.py
+    - ultralytics/models/fastsam/**/*.py
+    - ultralytics/models/sam/*.py
+    - ultralytics/models/sam/**/*.py
+    - ultralytics/models/nas/*.py
+    - ultralytics/models/nas/**/*.py
+    - ultralytics/models/rtdetr/*.py
+    - ultralytics/models/rtdetr/**/*.py
+    - ultralytics/models/utils/*.py
+    - ultralytics/models/utils/**/*.py
     - ultralytics/nn/*.py
     - ultralytics/nn/**/*.py
     - ultralytics/solutions/*.py
