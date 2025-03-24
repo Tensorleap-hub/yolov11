@@ -1,9 +1,9 @@
+import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss
 from ultralytics.tensorleap_folder.config import cfg
-from ultralytics.tensorleap_folder.utils import create_data_with_ult,pre_process_dataloader
+from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader, get_labels_mapping
 from typing import List
 import numpy as np
-from code_loader.contract.visualizer_classes import LeapImageWithBBox
 from code_loader import leap_binder
 from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType
 from code_loader.contract.enums import LeapDataType
@@ -12,7 +12,12 @@ from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_prep
                                                                  tensorleap_input_encoder, tensorleap_metadata,
                                                                  tensorleap_custom_visualizer)
 
+from ultralytics.utils import yaml_load
+from ultralytics.utils.checks import check_file
 
+from ultralytics.utils.plotting import plot_images
+from code_loader.contract.responsedataclasses import BoundingBox
+from code_loader.contract.visualizer_classes import LeapImageWithBBox
 
 @tensorleap_preprocess()
 def preprocess_func_leap() -> List[PreprocessResponse]:
@@ -74,14 +79,11 @@ def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
     Returns:
     An instance of LeapImageWithBBox containing the input image with ground truth bounding boxes overlaid.
     """
+    dataset_yaml_file=check_file(cfg.data)
+    all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
+    bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=1, label=all_clss.get(int(bbx[4]),'Unknown Class')) for bbx in bb_gt]
 
-    # val_smps_plot_tf = plot_images(torch.tensor(image).unsqueeze(0), torch.tensor(np.repeat(batch_idx,bb_gt.shape[0])), bb_gt[:,-1].astype(int), torch.tensor(bb_gt[:,:-1]), names=get_labels_mapping(cfg), save=False, threaded=False)
-    # bb_object: List[BoundingBox] = bb_array_to_object(bb_gt, iscornercoded=False, bg_label=CONFIG['BACKGROUND_LABEL'],
-    #                                                   is_gt=True)
-    # bb_object = [bbox for bbox in bb_object if bbox.label in CATEGORIES_no_background]
-    #
-    # return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bb_gt)
-    pass
+    return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
 @tensorleap_custom_visualizer('image_visualizer', LeapDataType.Image)
 def image_visualizer(image: np.ndarray) -> LeapImage:
@@ -93,8 +95,11 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     """
     Overlays the BB predictions on the image
     """
-    pass
-    return LeapImageWithBBox(data=(image * 255).astype(np.uint8), bounding_boxes=predictions)
+    dataset_yaml_file=check_file(cfg.data)
+    all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
+    bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=bbx[5], label=all_clss.get(int(bbx[5]),'Unknown Class')) for bbx in predictions]
+
+    return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
 if __name__ == '__main__':
     leap_binder.check()
