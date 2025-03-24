@@ -13,10 +13,10 @@ include:
     - tests/*.py
     - ultralytics/*.py
     - ultralytics/cfg/*.py
-    - ultralytics/cfg/solutions/*.yaml
     - ultralytics/cfg/datasets/coco.yaml
     - ultralytics/cfg/default.yaml
-    - ultralytics/cfg/*.py
+    - ultralytics/cfg/**/*.py
+    - ultralytics/cfg/**/*.yaml
     - ultralytics/cfg/models/11/*.yaml
     - ultralytics/data/*.py
     - ultralytics/data/scripts/*.sh
