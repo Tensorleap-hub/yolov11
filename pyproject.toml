@@ -33,7 +33,7 @@ ultralytics-thop = ">=2.0.0"
 code-loader = "^1.0.75"
 code-loader-helpers = "^1.0.20"
 
-tensorflow-macos = "2.15.0"
+tensorflow-macos = "2.16.2"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "*"
