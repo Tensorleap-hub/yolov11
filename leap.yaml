@@ -16,6 +16,7 @@ include:
     - ultralytics/cfg/solutions/*.yaml
     - ultralytics/cfg/datasets/coco.yaml
     - ultralytics/cfg/default.yaml
+    - ultralytics/cfg/*.py
     - ultralytics/cfg/models/11/*.yaml
     - ultralytics/data/*.py
     - ultralytics/data/scripts/*.sh
