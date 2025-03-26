@@ -1,17 +1,19 @@
 # import torch
+import torch
+from charset_normalizer import detect
 
 from leap_binder import (input_encoder, preprocess_func_leap, gt_encoder,
                          leap_binder, dummy_loss, metadata_sample_index, gt_bb_decoder, image_visualizer, bb_decoder)
 import tensorflow as tf
 import numpy as np
 from code_loader.helpers import visualize
+from code_loader.helpers.detection.yolo.utils import reshape_output_list
 
-# from ultralytics.utils import ops
-# from ultralytics.utils.plotting import output_to_target
+
 
 
 def check_custom_test():
-    check_generic = False
+    check_generic = True
     plot_vis= True
     if check_generic:
         leap_binder.check()
@@ -20,32 +22,42 @@ def check_custom_test():
     # load the model
     model_path = r"yolov11s.h5"
     model = tf.keras.models.load_model(model_path)
+    from ultralytics import YOLO
+    model_base = YOLO("yolo11s.pt")
 
     responses = preprocess_func_leap()
     for subset in responses:
-        # detector= subset.data['predictor']
         for idx in range(10):
             image = input_encoder(idx, subset)
             concat = np.expand_dims(image, axis=0)
             y_pred = model([concat]).numpy()
             gt = gt_encoder(idx, subset)
+###################### loss #########################
+            cls_ls,bbx_ls= reshape_output_list(tf.convert_to_tensor(y_pred.transpose(0,2,1)),decoded=True,image_size=640, priors=1)
+            pred_ls=[]
+            scales_ls=[(80,80),(40,40),(20,20)]
+            for i in range(len(cls_ls)):
+                pred_ls.append(torch.concatenate([torch.from_numpy(bbx_ls[i].numpy()), torch.from_numpy(cls_ls[i].numpy())], dim=2).permute(0, 2, 1).reshape(1,84,*scales_ls[i]) )
+            d=subset.data['dataloader'].labels[idx]
+            d["bboxes"]=torch.from_numpy(d["bboxes"])
+            d["cls"]=torch.from_numpy(d["cls"])
+            d["batch_idx"]=torch.ones_like(d['cls'])
+            criterion =model_base.init_criterion()
+            criterion.no=84 # why?
+            criterion.reg_max=1 #why?
+            #what is self.proj
+
+            criterion(pred_ls, d)
 
 
-            # y_pred= detector.postprocess(torch.from_numpy(y_pred.numpy()))
-            # _,cls_temp,bbx_temp,conf_temp=output_to_target(y_pred, max_det=detector.args.max_det)
-            # t_pred=np.concatenate([bbx_temp,np.expand_dims(conf_temp,1),np.expand_dims(cls_temp,1)],axis=1)
-            # post_proc_pred = t_pred[t_pred[:, 4] > 0.25] # TODO- make this a cfg param
-            # post_proc_pred[:,:4:2]/=image.shape[1]
-            # post_proc_pred[:,1:4:2]/=image.shape[2]
-
-
+#####################################################
             img_vis=image_visualizer(image)
             gt_img=gt_bb_decoder(image,gt)
             pred_img=bb_decoder(image,y_pred)
 
             if plot_vis:
-                visualize(img_vis)
-                visualize(gt_img)
+                # visualize(img_vis)
+                # visualize(gt_img)
                 visualize(pred_img)
 
 

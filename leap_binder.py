@@ -27,8 +27,8 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
     data_loader_val,n_sampels_val=create_data_with_ult(cfg,yolo_data,phase='val')
     data_loader_train,n_sampels_train=create_data_with_ult(cfg,yolo_data,phase='train')
 
-    val = PreprocessResponse(sample_ids=np.arange(n_sampels_val), data={'dataloader':data_loader_val},sample_id_type=int)
-    train = PreprocessResponse(sample_ids=np.arange(n_sampels_train), data={'dataloader':data_loader_train},sample_id_type=int, state=DataStateType.training)
+    val = PreprocessResponse(sample_ids=list(np.arange(n_sampels_val)), data={'dataloader':data_loader_val},sample_id_type=int, state=DataStateType.validation)
+    train = PreprocessResponse(sample_ids=list(np.arange(n_sampels_train)), data={'dataloader':data_loader_train},sample_id_type=int, state=DataStateType.training)
     response = [val,train]
     return response
 
