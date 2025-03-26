@@ -70,24 +70,24 @@ for batch_i, batch in enumerate(dataloader):
     predictor.update_metrics(preds_pt, batch)
     predictor.update_metrics(preds_tf , batch)
 
-    pred_samp_plot_pt=plot_images(
-        batch["img"],
-        *output_to_target(preds_pt, max_det=predictor.args.max_det),
-        paths=batch["im_file"],
-        fname=predictor.save_dir / f"val_batch{batch_i}_pred.jpg",
-        names=predictor.names,
-        on_plot=predictor.on_plot,
-        save=False,
-        threaded=False
-    )
-    plt.imshow(pred_samp_plot_pt)
-    plt.axis("off")
-    plt.savefig(f"sample_{batch_i}_pred_pt.png")
-
-    val_smps_plot_pt=plot_images(batch["img"],batch["batch_idx"], batch["cls"].squeeze(-1),batch["bboxes"], names=predictor.names,save=False,threaded=False)
-    plt.imshow(val_smps_plot_pt)
-    plt.axis("off")
-    plt.savefig(f"sample_{batch_i}_gt_pt.png")
+    # pred_samp_plot_pt=plot_images(
+    #     batch["img"],
+    #     *output_to_target(preds_pt, max_det=predictor.args.max_det),
+    #     paths=batch["im_file"],
+    #     fname=predictor.save_dir / f"val_batch{batch_i}_pred.jpg",
+    #     names=predictor.names,
+    #     on_plot=predictor.on_plot,
+    #     save=False,
+    #     threaded=False
+    # )
+    # plt.imshow(pred_samp_plot_pt)
+    # plt.axis("off")
+    # plt.savefig(f"sample_{batch_i}_pred_pt.png")
+    #
+    # val_smps_plot_pt=plot_images(batch["img"],batch["batch_idx"], batch["cls"].squeeze(-1),batch["bboxes"], names=predictor.names,save=False,threaded=False)
+    # plt.imshow(val_smps_plot_pt)
+    # plt.axis("off")
+    # plt.savefig(f"sample_{batch_i}_gt_pt.png")
 
     pred_samp_plot_tf  = plot_images(
         batch["img"],

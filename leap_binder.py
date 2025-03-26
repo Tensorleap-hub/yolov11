@@ -1,7 +1,8 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss
-from ultralytics.tensorleap_folder.config import cfg
-from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader, get_labels_mapping
+from ultralytics.tensorleap_folder.config import cfg, yolo_data
+from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader, get_labels_mapping, \
+    get_predictor_obj
 from typing import List
 import numpy as np
 from code_loader import leap_binder
@@ -15,18 +16,19 @@ from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_prep
 from ultralytics.utils import yaml_load
 from ultralytics.utils.checks import check_file
 
-from ultralytics.utils.plotting import plot_images
 from code_loader.contract.responsedataclasses import BoundingBox
 from code_loader.contract.visualizer_classes import LeapImageWithBBox
 
+from ultralytics.utils.plotting import output_to_target
+
+
 @tensorleap_preprocess()
 def preprocess_func_leap() -> List[PreprocessResponse]:
-    data_loader_val,n_sampels_val, predictor=create_data_with_ult(cfg,phase='val')
-    data_loader_train,n_sampels_train=create_data_with_ult(cfg,phase='train')
+    data_loader_val,n_sampels_val=create_data_with_ult(cfg,yolo_data,phase='val')
+    data_loader_train,n_sampels_train=create_data_with_ult(cfg,yolo_data,phase='train')
 
-    # imgs_train, clss_train, bboxes_train, batch_idxs_train=create_data_with_ult(cfg,phase='train')
-    val = PreprocessResponse(sample_ids=np.arange(n_sampels_val), data={'dataloader':data_loader_val, 'predictor':predictor},sample_id_type=int)
-    train = PreprocessResponse(sample_ids=np.arange(n_sampels_train), data={'dataloader':data_loader_train, 'predictor':predictor},sample_id_type=int, state=DataStateType.training)
+    val = PreprocessResponse(sample_ids=np.arange(n_sampels_val), data={'dataloader':data_loader_val},sample_id_type=int)
+    train = PreprocessResponse(sample_ids=np.arange(n_sampels_train), data={'dataloader':data_loader_train},sample_id_type=int, state=DataStateType.training)
     response = [val,train]
     return response
 
@@ -34,7 +36,8 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
 # the PreprocessResponse data. Returns a numpy array containing the sample's image.
 @tensorleap_input_encoder('image')
 def input_encoder(idx: int, preprocess: PreprocessResponse) -> np.ndarray:
-    imgs, _, _, _ =pre_process_dataloader(preprocess, idx)
+    predictor = get_predictor_obj(cfg,yolo_data)
+    imgs, _, _, _ =pre_process_dataloader(preprocess, idx, predictor)
 
     return imgs.astype('float32')
 
@@ -52,7 +55,8 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
         Output: bounding_boxes (np.ndarray): An array of bounding boxes extracted from the instance segmentation polygons in
                 the JSON data. Each bounding box is represented as an array containing [x_center, y_center, width, height, label].
         """
-    _, clss, bboxes, _=pre_process_dataloader(preprocessing, idx)
+    predictor = get_predictor_obj(cfg,yolo_data)
+    _, clss, bboxes, _=pre_process_dataloader(preprocessing, idx,predictor)
     return np.concatenate([bboxes,clss],axis=1)
 
 
@@ -65,7 +69,7 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
 
 @tensorleap_custom_loss("dummy_loss")
 def dummy_loss(pred,gt):
-    return np.zeros(1)
+    return np.random.rand(1)
 
 @tensorleap_custom_visualizer("bb_gt_decoder", LeapDataType.ImageWithBBox)
 def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
@@ -97,7 +101,14 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     """
     dataset_yaml_file=check_file(cfg.data)
     all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
-    bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=bbx[5], label=all_clss.get(int(bbx[5]),'Unknown Class')) for bbx in predictions]
+    predictor = get_predictor_obj(cfg,yolo_data)
+    y_pred = predictor.postprocess(torch.from_numpy(predictions))
+    _, cls_temp, bbx_temp, conf_temp = output_to_target(y_pred, max_det=predictor.args.max_det)
+    t_pred = np.concatenate([bbx_temp, np.expand_dims(conf_temp, 1), np.expand_dims(cls_temp, 1)], axis=1)
+    post_proc_pred = t_pred[t_pred[:, 4] >  (getattr(cfg, "conf", 0.25) or 0.25)]
+    post_proc_pred[:, :4:2] /= image.shape[1]
+    post_proc_pred[:, 1:4:2] /= image.shape[2]
+    bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=bbx[4], label=all_clss.get(int(bbx[5]),'Unknown Class')) for bbx in post_proc_pred]
 
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
