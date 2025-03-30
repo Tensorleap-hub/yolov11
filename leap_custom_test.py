@@ -41,7 +41,7 @@ def check_custom_test():
 
             img_vis=image_visualizer(image)
             gt_img=gt_bb_decoder(image,gt)
-            pred_img=bb_decoder(image,y_pred)
+            pred_img=bb_decoder(image,y_pred.squeeze())
 
             if plot_vis:
                 visualize(img_vis)

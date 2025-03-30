@@ -112,7 +112,8 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     dataset_yaml_file=check_file(cfg.data)
     all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
     predictor = get_predictor_obj(cfg,yolo_data)
-    y_pred = predictor.postprocess(torch.from_numpy(predictions))
+    print(f"\nPRINT FROM BB_DECODER: PREDICTIONS SHAPE: {predictions.shape}\n")
+    y_pred = predictor.postprocess(torch.from_numpy(predictions).unsqueeze(0))
     _, cls_temp, bbx_temp, conf_temp = output_to_target(y_pred, max_det=predictor.args.max_det)
     t_pred = np.concatenate([bbx_temp, np.expand_dims(conf_temp, 1), np.expand_dims(cls_temp, 1)], axis=1)
     post_proc_pred = t_pred[t_pred[:, 4] >  (getattr(cfg, "conf", 0.25) or 0.25)]

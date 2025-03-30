@@ -248,6 +248,15 @@ def non_max_suppression(
     nm = prediction.shape[1] - nc - 4  # number of masks
     mi = 4 + nc  # mask start index
     xc = prediction[:, 4:mi].amax(1) > conf_thres  # candidates
+    print(f"\nPRINT FROM NMS: PREDICTIONS SHAPE: {prediction.shape}\n")
+    print(f"\nPRINT FROM NMS: bs: {bs}\n")
+    print(f"\nPRINT FROM NMS: nc: {nc}\n")
+    print(f"\nPRINT FROM NMS: nm: {nm}\n")
+    print(f"\nPRINT FROM NMS: mi: {mi}\n")
+
+
+
+
 
     # Settings
     # min_wh = 2  # (pixels) minimum box width and height
@@ -255,6 +264,9 @@ def non_max_suppression(
     multi_label &= nc > 1  # multiple labels per box (adds 0.5ms/img)
 
     prediction = prediction.transpose(-1, -2)  # shape(1,84,6300) to shape(1,6300,84)
+    print(f"\nPRINT FROM NMS: PREDICTIONS SHAPE LINE 266: {prediction.shape}\n")
+
+
     if not rotated:
         if in_place:
             prediction[..., :4] = xywh2xyxy(prediction[..., :4])  # xywh to xyxy
@@ -277,6 +289,10 @@ def non_max_suppression(
             x = torch.cat((x, v), 0)
 
         # If none remain process next image
+        print(f"\nPRINT FROM NMS: x LINE 292: {x}\n")
+        print(f"\nPRINT FROM NMS: x SHAPE LINE 292: {x.shape}\n")
+
+
         if not x.shape[0]:
             continue
 
