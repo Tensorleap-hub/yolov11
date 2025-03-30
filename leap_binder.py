@@ -18,7 +18,7 @@ from ultralytics.utils.checks import check_file
 
 from code_loader.contract.responsedataclasses import BoundingBox
 from code_loader.contract.visualizer_classes import LeapImageWithBBox
-
+from code_loader.utils import rescale_min_max
 from ultralytics.utils.plotting import output_to_target
 
 
@@ -27,8 +27,8 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
     data_loader_val,n_sampels_val=create_data_with_ult(cfg,yolo_data,phase='val')
     data_loader_train,n_sampels_train=create_data_with_ult(cfg,yolo_data,phase='train')
 
-    val = PreprocessResponse(sample_ids=np.arange(n_sampels_val), data={'dataloader':data_loader_val},sample_id_type=int)
-    train = PreprocessResponse(sample_ids=np.arange(n_sampels_train), data={'dataloader':data_loader_train},sample_id_type=int, state=DataStateType.training)
+    val = PreprocessResponse(sample_ids=list(np.arange(n_sampels_val)), data={'dataloader':data_loader_val},sample_id_type=int, state=DataStateType.validation)
+    train = PreprocessResponse(sample_ids=list(np.arange(n_sampels_train)), data={'dataloader':data_loader_train},sample_id_type=int, state=DataStateType.training)
     response = [val,train]
     return response
 
@@ -91,7 +91,7 @@ def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
 
 @tensorleap_custom_visualizer('image_visualizer', LeapDataType.Image)
 def image_visualizer(image: np.ndarray) -> LeapImage:
-
+    image = rescale_min_max(image)
     return LeapImage((image.transpose(1,2,0)), compress=False)
 
 @tensorleap_custom_visualizer("bb_decoder", LeapDataType.ImageWithBBox)

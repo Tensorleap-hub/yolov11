@@ -11,7 +11,7 @@ from code_loader.helpers import visualize
 
 
 def check_custom_test():
-    check_generic = False
+    check_generic = True
     plot_vis= True
     if check_generic:
         leap_binder.check()
