@@ -8,7 +8,7 @@ import tensorflow as tf
 import numpy as np
 from code_loader.helpers import visualize
 from code_loader.helpers.detection.yolo.utils import reshape_output_list
-
+from ultralytics.tensorleap_folder.config import cfg
 
 
 
@@ -22,8 +22,11 @@ def check_custom_test():
     # load the model
     model_path = r"yolov11s.h5"
     model = tf.keras.models.load_model(model_path)
+
     from ultralytics import YOLO
     model_base = YOLO("yolo11s.pt")
+    model_base.args=cfg
+    model_base.model.model[-1].reg_max=1
 
     responses = preprocess_func_leap()
     for subset in responses:
@@ -41,13 +44,17 @@ def check_custom_test():
             d=subset.data['dataloader'].labels[idx]
             d["bboxes"]=torch.from_numpy(d["bboxes"])
             d["cls"]=torch.from_numpy(d["cls"])
-            d["batch_idx"]=torch.ones_like(d['cls'])
+            d["batch_idx"]=torch.zeros_like(d['cls'])
             criterion =model_base.init_criterion()
-            criterion.no=84 # why?
-            criterion.reg_max=1 #why?
-            #what is self.proj
-
-            criterion(pred_ls, d)
+            # criterion.no=84 # why?
+            # criterion.reg_max=1 #why?
+            # criterion.proj=torch.ones(1)
+            from ultralytics.utils import IterableSimpleNamespace
+            criterion.hyp = IterableSimpleNamespace(**criterion.hyp)
+            criterion.hyp.box=7.5
+            criterion.hyp.cls = 0.5
+            criterion.hyp.dfl= 1.5
+            L= criterion(pred_ls, d)
 
 
 #####################################################

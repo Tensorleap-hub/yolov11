@@ -14,7 +14,7 @@ cache: false
 device: cpu
 workers: 0
 project:
-name: train19
+name: train31
 exist_ok: false
 pretrained: true
 optimizer: auto
@@ -104,4 +104,4 @@ erasing: 0.4
 crop_fraction: 1.0
 cfg:
 tracker: botsort.yaml
-save_dir: /Users/yamtawachi/tensorleap/ultralytics/runs/detect/train19
+save_dir: /Users/yamtawachi/tensorleap/ultralytics/runs/detect/train31
