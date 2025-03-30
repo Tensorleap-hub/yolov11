@@ -118,7 +118,7 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     post_proc_pred[:, :4:2] /= image.shape[1]
     post_proc_pred[:, 1:4:2] /= image.shape[2]
     bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=bbx[4], label=all_clss.get(int(bbx[5]),'Unknown Class')) for bbx in post_proc_pred]
-
+    image = rescale_min_max(image)
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
 if __name__ == '__main__':
