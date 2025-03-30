@@ -1,8 +1,7 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss
 from ultralytics.tensorleap_folder.config import cfg, yolo_data
-from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader, get_labels_mapping, \
-    get_predictor_obj
+from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader,  get_predictor_obj
 from typing import List
 import numpy as np
 from code_loader import leap_binder
@@ -112,7 +111,6 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     dataset_yaml_file=check_file(cfg.data)
     all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
     predictor = get_predictor_obj(cfg,yolo_data)
-    print(f"\nPRINT FROM BB_DECODER: PREDICTIONS SHAPE: {predictions.shape}\n")
     y_pred = predictor.postprocess(torch.from_numpy(predictions).unsqueeze(0))
     _, cls_temp, bbx_temp, conf_temp = output_to_target(y_pred, max_det=predictor.args.max_det)
     t_pred = np.concatenate([bbx_temp, np.expand_dims(conf_temp, 1), np.expand_dims(cls_temp, 1)], axis=1)
