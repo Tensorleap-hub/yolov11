@@ -35,7 +35,7 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
 # Input encoder fetches the image with the index `idx` from the `images` array set in
 # the PreprocessResponse data. Returns a numpy array containing the sample's image.
 @tensorleap_input_encoder('image')
-def input_encoder(idx: int, preprocess: PreprocessResponse) -> np.ndarray:
+def input_encoder(idx: int, preprocess: PreprocessResponse,channel_dim=1) -> np.ndarray:
     predictor = get_predictor_obj(cfg,yolo_data)
     imgs, _, _, _ =pre_process_dataloader(preprocess, idx, predictor)
 
@@ -57,6 +57,16 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
         """
     predictor = get_predictor_obj(cfg,yolo_data)
     _, clss, bboxes, _=pre_process_dataloader(preprocessing, idx,predictor)
+    if clss.shape[0]==0 and  bboxes.shape[0]==0:
+        return np.full((1, 5), np.nan,dtype=np.float32)
+    elif clss.shape[0]==0:
+        temp_array=np.full((bboxes.shape[0], 5), np.nan,dtype=np.float32)
+        temp_array[:,:4]=bboxes
+        return temp_array
+    elif bboxes.shape[0]==0:
+        temp_array = np.full((clss.shape[0], 5), np.nan,dtype=np.float32)
+        temp_array[:, 4] = clss
+        return temp_array
     return np.concatenate([bboxes,clss],axis=1)
 
 
@@ -85,7 +95,7 @@ def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
     """
     dataset_yaml_file=check_file(cfg.data)
     all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
-    bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=1, label=all_clss.get(int(bbx[4]),'Unknown Class')) for bbx in bb_gt]
+    bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=1, label=all_clss.get(int(bbx[4]) if not np.isnan(bbx[4]) else -1, 'Unknown Class')) for bbx in bb_gt]
     image = rescale_min_max(image)
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
