@@ -76,13 +76,13 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
     return idx
 
 
-@tensorleap_custom_loss("dummy_loss")
-def loss(pred,gt):
+@tensorleap_custom_loss("loss")
+def loss(pred80,pred40,pred20,gt):
     d={}
     d["bboxes"] = torch.from_numpy(gt[...,:4])
     d["cls"] = torch.from_numpy(gt[...,4])
     d["batch_idx"] = torch.zeros_like(d['cls'])
-    y_pred_torch = [torch.from_numpy(s.numpy()) for s in pred[1:]]
+    y_pred_torch = [torch.from_numpy(s.numpy()) for s in [pred80,pred40,pred20]]
     all_loss,loss_parts= criterion(y_pred_torch, d)
     return np.append(loss_parts.numpy(), all_loss.item())
 @tensorleap_custom_visualizer("bb_gt_decoder", LeapDataType.ImageWithBBox)
