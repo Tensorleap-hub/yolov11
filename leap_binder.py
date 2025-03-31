@@ -1,6 +1,6 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss
-from ultralytics.tensorleap_folder.config import cfg, yolo_data
+from ultralytics.tensorleap_folder.config import cfg, yolo_data, criterion
 from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader, get_labels_mapping, \
     get_predictor_obj
 from typing import List
@@ -12,14 +12,13 @@ from code_loader.visualizers.default_visualizers import LeapImage
 from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_preprocess, tensorleap_gt_encoder,
                                                                  tensorleap_input_encoder, tensorleap_metadata,
                                                                  tensorleap_custom_visualizer)
-
 from ultralytics.utils import yaml_load
 from ultralytics.utils.checks import check_file
-
 from code_loader.contract.responsedataclasses import BoundingBox
 from code_loader.contract.visualizer_classes import LeapImageWithBBox
-
 from ultralytics.utils.plotting import output_to_target
+
+
 
 
 @tensorleap_preprocess()
@@ -69,7 +68,13 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
 
 @tensorleap_custom_loss("dummy_loss")
 def dummy_loss(pred,gt):
-    return np.random.rand(1)
+    d={}
+    d["bboxes"] = torch.from_numpy(gt[...,:4])
+    d["cls"] = torch.from_numpy(gt[...,4])
+    d["batch_idx"] = torch.zeros_like(d['cls'])
+    y_pred_torch = [torch.from_numpy(s.numpy()) for s in pred[1:]]
+    all_loss,loss_parts= criterion(y_pred_torch, d)
+    return np.append(loss_parts.numpy(), all_loss.item())
 
 @tensorleap_custom_visualizer("bb_gt_decoder", LeapDataType.ImageWithBBox)
 def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
@@ -102,7 +107,7 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     dataset_yaml_file=check_file(cfg.data)
     all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
     predictor = get_predictor_obj(cfg,yolo_data)
-    y_pred = predictor.postprocess(torch.from_numpy(predictions))
+    y_pred = predictor.postprocess(torch.from_numpy(predictions[0]))
     _, cls_temp, bbx_temp, conf_temp = output_to_target(y_pred, max_det=predictor.args.max_det)
     t_pred = np.concatenate([bbx_temp, np.expand_dims(conf_temp, 1), np.expand_dims(cls_temp, 1)], axis=1)
     post_proc_pred = t_pred[t_pred[:, 4] >  (getattr(cfg, "conf", 0.25) or 0.25)]
