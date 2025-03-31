@@ -78,11 +78,12 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
 
 @tensorleap_custom_loss("loss")
 def loss(pred80,pred40,pred20,gt):
+    gt=np.squeeze(gt,axis=0)
     d={}
     d["bboxes"] = torch.from_numpy(gt[...,:4])
     d["cls"] = torch.from_numpy(gt[...,4])
     d["batch_idx"] = torch.zeros_like(d['cls'])
-    y_pred_torch = [torch.from_numpy(s).unsqueeze(0) for s in [pred80,pred40,pred20]]
+    y_pred_torch = [torch.from_numpy(s) for s in [pred80,pred40,pred20]]
     all_loss,loss_parts= criterion(y_pred_torch, d)
     return np.append(loss_parts.numpy(), all_loss.item())
 @tensorleap_custom_visualizer("bb_gt_decoder", LeapDataType.ImageWithBBox)
@@ -109,7 +110,7 @@ def image_visualizer(image: np.ndarray) -> LeapImage:
     return LeapImage((image.transpose(1,2,0)), compress=False)
 
 @tensorleap_custom_visualizer("bb_decoder", LeapDataType.ImageWithBBox)
-def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
+def bb_decoder(image: np.ndarray, predictions: np.ndarray, demo_pred) -> LeapImageWithBBox:
     """
     Overlays the BB predictions on the image
     """
