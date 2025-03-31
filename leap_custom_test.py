@@ -1,6 +1,6 @@
 
 from leap_binder import (input_encoder, preprocess_func_leap, gt_encoder,
-                         leap_binder, dummy_loss, metadata_sample_index, gt_bb_decoder, image_visualizer, bb_decoder)
+                         leap_binder, loss, metadata_sample_index, gt_bb_decoder, image_visualizer, bb_decoder)
 import tensorflow as tf
 import numpy as np
 from code_loader.helpers import visualize
@@ -15,7 +15,7 @@ def check_custom_test():
     print("started custom tests")
 
     # load the model
-    model_path = r"yolov11s.h5"
+    model_path = r"yolov11sb.h5"
     model = tf.keras.models.load_model(model_path)
 
     responses = preprocess_func_leap()
@@ -23,19 +23,19 @@ def check_custom_test():
         for idx in range(10):
             image = input_encoder(idx, subset)
             concat = np.expand_dims(image, axis=0)
-            y_pred = model([concat]).numpy()
+            y_pred = model([concat])
             gt = gt_encoder(idx, subset)
+            loss_array=loss(y_pred,gt) #TODO - fix in tensorleap (check if list is acceptable)
 
             img_vis=image_visualizer(image)
             gt_img=gt_bb_decoder(image,gt)
-            pred_img=bb_decoder(image,y_pred.squeeze())
+            # pred_img=bb_decoder(image,y_pred[0].numpy().squeeze()) # TODO - fix in tensorleap
 
             if plot_vis:
                 visualize(img_vis)
                 visualize(gt_img)
-                visualize(pred_img)
+                # visualize(pred_img)
 
-            d_loss=dummy_loss(y_pred,gt)
             metadata_sample=metadata_sample_index(idx,subset)
     print("finish tests")
 

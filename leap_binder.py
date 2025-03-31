@@ -1,6 +1,6 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss
-from ultralytics.tensorleap_folder.config import cfg, yolo_data
+from ultralytics.tensorleap_folder.config import cfg, yolo_data, criterion
 from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader,  get_predictor_obj
 from typing import List
 import numpy as np
@@ -77,9 +77,14 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
 
 
 @tensorleap_custom_loss("dummy_loss")
-def dummy_loss(pred,gt):
-    return np.random.rand(1)
-
+def loss(pred,gt):
+    d={}
+    d["bboxes"] = torch.from_numpy(gt[...,:4])
+    d["cls"] = torch.from_numpy(gt[...,4])
+    d["batch_idx"] = torch.zeros_like(d['cls'])
+    y_pred_torch = [torch.from_numpy(s.numpy()) for s in pred[1:]]
+    all_loss,loss_parts= criterion(y_pred_torch, d)
+    return np.append(loss_parts.numpy(), all_loss.item())
 @tensorleap_custom_visualizer("bb_gt_decoder", LeapDataType.ImageWithBBox)
 def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
     """
