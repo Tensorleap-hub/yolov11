@@ -25,8 +25,7 @@ def check_custom_test():
             concat = np.expand_dims(image, axis=0)
             y_pred = model([concat])
             gt = gt_encoder(idx, subset)
-            loss_array=loss(y_pred[1],y_pred[2],y_pred[3],gt) #TODO - fix in tensorleap (check if list is acceptable)
-
+            loss_array=loss(y_pred[1].numpy().squeeze(),y_pred[2].numpy().squeeze(),y_pred[3].numpy().squeeze(),gt) #TODO - fix in tensorleap (check if list is acceptable)
             img_vis=image_visualizer(image)
             gt_img=gt_bb_decoder(image,gt)
             pred_img=bb_decoder(image,y_pred[0].numpy().squeeze()) # TODO - fix in tensorleap
