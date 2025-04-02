@@ -6,10 +6,10 @@ entryFile: leap_binder.py
 include:
     - leap_binder.py
     - leap_custom_test.py
-    - config.py
+    - global_params.py
     - requirements.txt
     - ultralytics/tensorleap_folder/utils.py
-    - ultralytics/tensorleap_folder/config.py
+    - ultralytics/tensorleap_folder/global_params.py
     - tests/*.py
     - ultralytics/*.py
     - ultralytics/cfg/*.py

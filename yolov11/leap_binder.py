@@ -23,7 +23,7 @@ from ultralytics.data.build import build_dataloader
 from ultralytics.utils import callbacks
 from ultralytics.models.yolo.detect.val import DetectionValidator
 from ultralytics.utils.torch_utils import de_parallel
-from ultralytics.tensorleap_folder.config import cfg
+from ultralytics.tensorleap_folder.global_params import cfg
 
 @tensorleap_preprocess()
 def preprocess_func_leap() -> List[PreprocessResponse]:

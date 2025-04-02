@@ -1,7 +1,7 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss
-from ultralytics.tensorleap_folder.config import cfg, yolo_data, criterion
-from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader,  get_predictor_obj
+from ultralytics.tensorleap_folder.global_params import cfg, yolo_data, criterion, all_clss, predictor
+from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader
 from typing import List
 import numpy as np
 from code_loader import leap_binder
@@ -11,10 +11,8 @@ from code_loader.visualizers.default_visualizers import LeapImage
 from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_preprocess, tensorleap_gt_encoder,
                                                                  tensorleap_input_encoder, tensorleap_metadata,
                                                                  tensorleap_custom_visualizer)
-
 from ultralytics.utils import yaml_load
 from ultralytics.utils.checks import check_file
-
 from code_loader.contract.responsedataclasses import BoundingBox
 from code_loader.contract.visualizer_classes import LeapImageWithBBox
 from code_loader.utils import rescale_min_max
@@ -35,7 +33,6 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
 # the PreprocessResponse data. Returns a numpy array containing the sample's image.
 @tensorleap_input_encoder('image',channel_dim=1)
 def input_encoder(idx: int, preprocess: PreprocessResponse) -> np.ndarray:
-    predictor = get_predictor_obj(cfg,yolo_data)
     imgs, _, _, _ =pre_process_dataloader(preprocess, idx, predictor)
 
     return imgs.astype('float32')
@@ -54,7 +51,6 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
         Output: bounding_boxes (np.ndarray): An array of bounding boxes extracted from the instance segmentation polygons in
                 the JSON data. Each bounding box is represented as an array containing [x_center, y_center, width, height, label].
         """
-    predictor = get_predictor_obj(cfg,yolo_data)
     _, clss, bboxes, _=pre_process_dataloader(preprocessing, idx,predictor)
     if clss.shape[0]==0 and  bboxes.shape[0]==0:
         return np.full((1, 5), np.nan,dtype=np.float32)
@@ -114,9 +110,6 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     """
     Overlays the BB predictions on the image
     """
-    dataset_yaml_file=check_file(cfg.data)
-    all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
-    predictor = get_predictor_obj(cfg,yolo_data)
     y_pred = predictor.postprocess(torch.from_numpy(predictions).unsqueeze(0))
     _, cls_temp, bbx_temp, conf_temp = output_to_target(y_pred, max_det=predictor.args.max_det)
     t_pred = np.concatenate([bbx_temp, np.expand_dims(conf_temp, 1), np.expand_dims(cls_temp, 1)], axis=1)

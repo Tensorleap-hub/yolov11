@@ -11,7 +11,7 @@ from ultralytics.utils.ops import xywh2xyxy
 from ultralytics.utils.plotting import Annotator, colors
 import torch
 import cv2
-from config import cfg
+from global_params import cfg
 from ultralytics.utils import ASSETS
 from ultralytics.models.yolo.detect import DetectionPredictor
 from ultralytics.utils.torch_utils import de_parallel

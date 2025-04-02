@@ -6,5 +6,5 @@ entryFile: leap_binder.py
 include:
     - leap_binder.py
     - leap_custom_test.py
-    - config.py
+    - global_params.py
     - requirements.txt
