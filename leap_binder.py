@@ -2,7 +2,7 @@ import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss
 from ultralytics.tensorleap_folder.global_params import cfg, yolo_data, criterion, all_clss, predictor
 from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader
-from typing import List
+from typing import List, Dict, Union
 import numpy as np
 from code_loader import leap_binder
 from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType
@@ -19,6 +19,9 @@ from code_loader.utils import rescale_min_max
 from ultralytics.utils.plotting import output_to_target
 
 
+
+# ----------------------------------------------------data processing---------------------------------------------------
+
 @tensorleap_preprocess()
 def preprocess_func_leap() -> List[PreprocessResponse]:
     data_loader_val,n_sampels_val=create_data_with_ult(cfg,yolo_data,phase='val')
@@ -28,6 +31,10 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
     train = PreprocessResponse(sample_ids=list(range(n_sampels_train)), data={'dataloader':data_loader_train},sample_id_type=int, state=DataStateType.training)
     response = [val,train]
     return response
+
+
+# ------------------------------------------input and gt----------------------------------------------------------------
+
 
 # Input encoder fetches the image with the index `idx` from the `images` array set in
 # the PreprocessResponse data. Returns a numpy array containing the sample's image.
@@ -64,6 +71,7 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
         return temp_array
     return np.concatenate([bboxes,clss],axis=1)
 
+# ----------------------------------------------------------metadata----------------------------------------------------
 
 # Metadata functions allow to add extra data for a later use in analysis.
 # This metadata adds the int digit of each sample (not a hot vector).
@@ -71,6 +79,8 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
 def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
     return idx
 
+
+# ----------------------------------------------------------loss--------------------------------------------------------
 
 @tensorleap_custom_loss("loss")
 def loss(pred80,pred40,pred20,gt,demo_pred):
@@ -82,6 +92,9 @@ def loss(pred80,pred40,pred20,gt,demo_pred):
     y_pred_torch = [torch.from_numpy(s) for s in [pred80,pred40,pred20]]
     all_loss,loss_parts= criterion(y_pred_torch, d)
     return np.append(loss_parts.numpy(), all_loss.item())
+
+
+# ------------------------------------------------------visualizers-----------------------------------------------------
 @tensorleap_custom_visualizer("bb_gt_decoder", LeapDataType.ImageWithBBox)
 def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
     """
@@ -119,6 +132,11 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=bbx[4], label=all_clss.get(int(bbx[5]),'Unknown Class')) for bbx in post_proc_pred]
     image = rescale_min_max(image)
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
+
+
+
+# ---------------------------------------------------------metrics------------------------------------------------------
+
 
 if __name__ == '__main__':
     leap_binder.check()
