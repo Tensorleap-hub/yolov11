@@ -129,13 +129,13 @@ def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
     """
     dataset_yaml_file=check_file(cfg.data)
     all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
-    bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=1, label=all_clss.get(int(bbx[4]) if not np.isnan(bbx[4]) else -1, 'Unknown Class')) for bbx in bb_gt]
-    image = rescale_min_max(image)
+    bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=1, label=all_clss.get(int(bbx[4]) if not np.isnan(bbx[4]) else -1, 'Unknown Class')) for bbx in bb_gt.squeeze(0)]
+    image = rescale_min_max(image.squeeze(0))
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
 @tensorleap_custom_visualizer('image_visualizer', LeapDataType.Image)
 def image_visualizer(image: np.ndarray) -> LeapImage:
-    image = rescale_min_max(image)
+    image = rescale_min_max(image.squeeze(0))
     return LeapImage((image.transpose(1,2,0)), compress=False)
 
 @tensorleap_custom_visualizer("bb_decoder", LeapDataType.ImageWithBBox)
@@ -143,7 +143,8 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     """
     Overlays the BB predictions on the image
     """
-    y_pred = predictor.postprocess(torch.from_numpy(predictions).unsqueeze(0))
+    image=image.squeeze(0)
+    y_pred = predictor.postprocess(torch.from_numpy(predictions))
     _, cls_temp, bbx_temp, conf_temp = output_to_target(y_pred, max_det=predictor.args.max_det)
     t_pred = np.concatenate([bbx_temp, np.expand_dims(conf_temp, 1), np.expand_dims(cls_temp, 1)], axis=1)
     post_proc_pred = t_pred[t_pred[:, 4] >  (getattr(cfg, "conf", 0.25) or 0.25)]
@@ -158,15 +159,12 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
 # ---------------------------------------------------------metrics------------------------------------------------------
 @tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
 def iou_dic(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
-# TODO think how to do the same while indicating that the idx is in val/train so the dataset that will be used will be the correct one
-#TODO make some param globals
-
     batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
     batch["imgsz"]=(batch["resized_shape"],)
     batch["ori_shape"]=(batch["ori_shape"],)
     batch["ratio_pad"]= (batch["ratio_pad"],)
     batch["img"]=batch["img"].unsqueeze(0)
-    pred = predictor.postprocess(torch.from_numpy(y_pred).unsqueeze(0))[0]
+    pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
     predictor.seen=0
     predictor.args.plots=False
     predictor.stats={}
