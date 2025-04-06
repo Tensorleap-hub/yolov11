@@ -1,7 +1,7 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss, tensorleap_custom_metric
 from ultralytics.tensorleap_folder.global_params import cfg, yolo_data, criterion, all_clss, predictor
-from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader, pred_post_process
+from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader
 from typing import List, Dict, Union
 import numpy as np
 from code_loader import leap_binder
@@ -11,8 +11,6 @@ from code_loader.visualizers.default_visualizers import LeapImage
 from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_preprocess, tensorleap_gt_encoder,
                                                                  tensorleap_input_encoder, tensorleap_metadata,
                                                                  tensorleap_custom_visualizer)
-from ultralytics.utils import yaml_load
-from ultralytics.utils.checks import check_file
 from code_loader.contract.responsedataclasses import BoundingBox
 from code_loader.contract.visualizer_classes import LeapImageWithBBox
 from code_loader.utils import rescale_min_max
@@ -110,8 +108,8 @@ def loss(pred80,pred40,pred20,gt,demo_pred):
     d["cls"] = torch.from_numpy(gt[...,4])
     d["batch_idx"] = torch.zeros_like(d['cls'])
     y_pred_torch = [torch.from_numpy(s) for s in [pred80,pred40,pred20]]
-    all_loss,loss_parts= criterion(y_pred_torch, d)
-    return np.append(loss_parts.numpy(), all_loss.item())
+    all_loss,_= criterion(y_pred_torch, d)
+    return np.expand_dims(all_loss.unsqueeze(0).numpy(),axis=0)
 
 
 # ------------------------------------------------------visualizers-----------------------------------------------------
@@ -127,8 +125,6 @@ def gt_bb_decoder(image: np.ndarray, bb_gt: np.ndarray) -> LeapImageWithBBox:
     Returns:
     An instance of LeapImageWithBBox containing the input image with ground truth bounding boxes overlaid.
     """
-    dataset_yaml_file=check_file(cfg.data)
-    all_clss = yaml_load(dataset_yaml_file, append_filename=True)['names']
     bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=1, label=all_clss.get(int(bbx[4]) if not np.isnan(bbx[4]) else -1, 'Unknown Class')) for bbx in bb_gt.squeeze(0)]
     image = rescale_min_max(image.squeeze(0))
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
@@ -178,9 +174,18 @@ def iou_dic(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[
 
     mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
 
-    return np.array([mean_iou_per_image.mean()])
+    return np.expand_dims(mean_iou_per_image.mean(),axis=0)
 
-
+@tensorleap_custom_metric("cost", direction=MetricDirection.Downward)
+def cost(pred80,pred40,pred20,gt):
+    gt=np.squeeze(gt,axis=0)
+    d={}
+    d["bboxes"] = torch.from_numpy(gt[...,:4])
+    d["cls"] = torch.from_numpy(gt[...,4])
+    d["batch_idx"] = torch.zeros_like(d['cls'])
+    y_pred_torch = [torch.from_numpy(s) for s in [pred80,pred40,pred20]]
+    _,loss_parts= criterion(y_pred_torch, d)
+    return {"box":loss_parts[0].unsqueeze(0).numpy(),"cls":loss_parts[1].unsqueeze(0).numpy(),"dfl":loss_parts[2].unsqueeze(0).numpy()}
 
 if __name__ == '__main__':
     leap_binder.check()
