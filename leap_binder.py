@@ -18,9 +18,7 @@ from code_loader.contract.visualizer_classes import LeapImageWithBBox
 from code_loader.utils import rescale_min_max
 from ultralytics.utils.plotting import output_to_target
 from ultralytics.utils.metrics import box_iou
-# ori_shape = None
-# resized_shape = None
-# ratio_pad = None
+
 
 
 # ----------------------------------------------------data processing---------------------------------------------------
@@ -43,7 +41,7 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
 # the PreprocessResponse data. Returns a numpy array containing the sample's image.
 @tensorleap_input_encoder('image',channel_dim=1)
 def input_encoder(idx: int, preprocess: PreprocessResponse) -> np.ndarray:
-    imgs, _, _, _,_,_,_ =pre_process_dataloader(preprocess, idx, predictor)
+    imgs, _, _,_=pre_process_dataloader(preprocess, idx, predictor)
 
     return imgs.astype('float32')
 
@@ -61,8 +59,7 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
         Output: bounding_boxes (np.ndarray): An array of bounding boxes extracted from the instance segmentation polygons in
                 the JSON data. Each bounding box is represented as an array containing [x_center, y_center, width, height, label].
         """
-    # global ori_shape, resized_shape,ratio_pad
-    _, clss, bboxes, _,ori_shape, resized_shape,ratio_pad =pre_process_dataloader(preprocessing, idx,predictor)
+    _, clss, bboxes, _ =pre_process_dataloader(preprocessing, idx,predictor)
     if clss.shape[0]==0 and  bboxes.shape[0]==0:
         return np.full((1, 5), np.nan,dtype=np.float32)
     elif clss.shape[0]==0:
@@ -160,45 +157,30 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
 
 # ---------------------------------------------------------metrics------------------------------------------------------
 @tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
-def iou_dic(image:np.ndarray, y_true: np.ndarray, y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
+def iou_dic(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
 # TODO think how to do the same while indicating that the idx is in val/train so the dataset that will be used will be the correct one
 #TODO make some param globals
-    print(preprocess)
 
-    # batch={}
-    #dataset, _ = create_data_with_ult(cfg, yolo_data, phase='val')
-    # batch["imgsz"]=(640.,640.)
-    # batch["ori_shape"]=(preprocess.data.labels[idx]['shape'],)
-    # batch["ratio_pad"]= (((1.0,1.0),((batch["imgsz"][0]-batch["ori_shape"][0][0])//2,(batch["imgsz"][1]-batch["ori_shape"][0][1])//2)),)
-    # batch["img"]=torch.from_numpy(image).unsqueeze(0)
-    # batch["cls"]=torch.from_numpy(preprocess.labels[int(idx)]['cls'])
-    # batch["bboxes"]=torch.from_numpy(y_true[:,:4])
-    # batch["batch_idx"]=torch.zeros(batch["cls"].shape[0])
-    #
-    # # batch["imgsz"]=(resized_shape,)
-    # # batch["ori_shape"]=(ori_shape,)
-    # # batch["ratio_pad"]= (ratio_pad,)
-    # # batch["img"]=torch.from_numpy(image).unsqueeze(0)
-    # # batch["cls"]=torch.from_numpy(y_true[:,4]).unsqueeze(1)
-    # # batch["bboxes"]=torch.from_numpy(y_true[:,:4])
-    # # batch["batch_idx"]=torch.zeros(batch["cls"].shape[0])
-    #
-    # pred = predictor.postprocess(torch.from_numpy(y_pred).unsqueeze(0))[0]
-    # predictor.seen=0
-    # predictor.args.plots=False
-    # predictor.stats={}
-    # predictor.stats['tp']=[]
-    # pbatch = predictor._prepare_batch(0, batch)
-    # cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
-    # predn = predictor._prepare_pred(pred, pbatch)
-    # iou_mat = box_iou(bbox, predn[:, :4])
-    # if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
-    #     return np.zeros(1)
-    #
-    # mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
-    #
-    # return np.array([mean_iou_per_image.mean()])
-    return np.zeros(1)
+    batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
+    batch["imgsz"]=(batch["resized_shape"],)
+    batch["ori_shape"]=(batch["ori_shape"],)
+    batch["ratio_pad"]= (batch["ratio_pad"],)
+    batch["img"]=batch["img"].unsqueeze(0)
+    pred = predictor.postprocess(torch.from_numpy(y_pred).unsqueeze(0))[0]
+    predictor.seen=0
+    predictor.args.plots=False
+    predictor.stats={}
+    predictor.stats['tp']=[]
+    pbatch = predictor._prepare_batch(0, batch)
+    cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
+    predn = predictor._prepare_pred(pred, pbatch)
+    iou_mat = box_iou(bbox, predn[:, :4])
+    if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
+        return np.zeros(1)
+
+    mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
+
+    return np.array([mean_iou_per_image.mean()])
 
 
 

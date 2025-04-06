@@ -33,7 +33,7 @@ def pre_process_dataloader(preprocessresponse:PreprocessResponse, idx, predictor
     batch= preprocessresponse.data['dataloader'][idx]
     batch = predictor.preprocess(batch)
     imgs, clss, bboxes, batch_idxs, ori_shape, resized_shape,ratio_pad = batch['img'], batch['cls'], batch['bboxes'], batch['batch_idx'],batch['ori_shape'],batch['resized_shape'],batch['ratio_pad']
-    return imgs.numpy(), clss.numpy(), bboxes.numpy(), batch_idxs.numpy(), ori_shape, resized_shape, ratio_pad
+    return imgs.numpy(), clss.numpy(), bboxes.numpy(), batch_idxs.numpy()
 
 
 def pred_post_process(y_pred, predictor, image, cfg):

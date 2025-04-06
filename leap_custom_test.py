@@ -29,7 +29,7 @@ def check_custom_test():
             gt = gt_encoder(idx, subset)
             meta_data=misc_metadata(idx, subset)
             y_pred = model([concat])
-            iou=iou_dic(image,gt,y_pred[0].numpy().squeeze(), s_prepro)
+            iou=iou_dic(y_pred[0].numpy().squeeze(), s_prepro)
             loss_array=loss(y_pred[1].numpy(),y_pred[2].numpy(),y_pred[3].numpy(),np.expand_dims(gt,axis=0), y_pred[0].numpy()) #TODO - fix in tensorleap (check if list is acceptable)
             img_vis=image_visualizer(image)
             gt_img=gt_bb_decoder(image,gt)
