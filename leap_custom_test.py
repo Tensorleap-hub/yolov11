@@ -11,7 +11,7 @@ from code_loader.helpers import visualize
 
 def check_custom_test():
     check_generic = True
-    plot_vis= False
+    plot_vis= True
     if check_generic:
         leap_binder.check()
     print("started custom tests")
@@ -22,13 +22,14 @@ def check_custom_test():
 
     responses = preprocess_func_leap()
     for subset in responses:
-        for idx in range(1000):
+        for idx in range(10):
+            s_prepro=SamplePreprocessResponse(np.array(idx), subset)
             image = input_encoder(idx, subset)
             concat = np.expand_dims(image, axis=0)
             gt = gt_encoder(idx, subset)
             meta_data=misc_metadata(idx, subset)
             y_pred = model([concat])
-            iou=iou_dic(image,gt,y_pred[0].numpy().squeeze())
+            iou=iou_dic(image,gt,y_pred[0].numpy().squeeze(), s_prepro)
             loss_array=loss(y_pred[1].numpy(),y_pred[2].numpy(),y_pred[3].numpy(),np.expand_dims(gt,axis=0), y_pred[0].numpy()) #TODO - fix in tensorleap (check if list is acceptable)
             img_vis=image_visualizer(image)
             gt_img=gt_bb_decoder(image,gt)

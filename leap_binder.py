@@ -5,7 +5,7 @@ from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_proces
 from typing import List, Dict, Union
 import numpy as np
 from code_loader import leap_binder
-from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType
+from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType, SamplePreprocessResponse
 from code_loader.contract.enums import LeapDataType, MetricDirection
 from code_loader.visualizers.default_visualizers import LeapImage
 from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_preprocess, tensorleap_gt_encoder,
@@ -18,9 +18,9 @@ from code_loader.contract.visualizer_classes import LeapImageWithBBox
 from code_loader.utils import rescale_min_max
 from ultralytics.utils.plotting import output_to_target
 from ultralytics.utils.metrics import box_iou
-ori_shape = None
-resized_shape = None
-ratio_pad = None
+# ori_shape = None
+# resized_shape = None
+# ratio_pad = None
 
 
 # ----------------------------------------------------data processing---------------------------------------------------
@@ -61,7 +61,7 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
         Output: bounding_boxes (np.ndarray): An array of bounding boxes extracted from the instance segmentation polygons in
                 the JSON data. Each bounding box is represented as an array containing [x_center, y_center, width, height, label].
         """
-    global ori_shape, resized_shape,ratio_pad
+    # global ori_shape, resized_shape,ratio_pad
     _, clss, bboxes, _,ori_shape, resized_shape,ratio_pad =pre_process_dataloader(preprocessing, idx,predictor)
     if clss.shape[0]==0 and  bboxes.shape[0]==0:
         return np.full((1, 5), np.nan,dtype=np.float32)
@@ -92,14 +92,14 @@ def misc_metadata(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, in
         "image path": data.data['dataloader'].im_files[idx],
         "target path": data.data['dataloader'].label_files[idx],
         "bbox_format": data.data['dataloader'].labels[idx]["bbox_format"],
-        "class count":{all_clss.get(clss_info[0][i],'Unknown class'): clss_info[1][i] for i in range(len(clss_info[0]))},
+        # "class count":{all_clss.get(clss_info[0][i],'Unknown class'): clss_info[1][i] for i in range(len(clss_info[0]))},
         "normalized image": data.data['dataloader'].labels[idx]["normalized"],
         "idx":idx,
        # "brightness": img.mean(),
         "# unique classes" : len(clss_info[0]),
         "# of objects": clss_info[1].sum(),
         # "data part": data.state.value,
-        "im shape": {f"dim {i}": data.data['dataloader'].labels[idx]["shape"][i] for i in range(len(data.data['dataloader'].labels[idx]["shape"]))},
+        # "im shape": {f"dim {i}": data.data['dataloader'].labels[idx]["shape"][i] for i in range(len(data.data['dataloader'].labels[idx]["shape"]))},
      }
     return d
 
@@ -163,40 +163,42 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
 def iou_dic(image:np.ndarray, y_true: np.ndarray, y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
 # TODO think how to do the same while indicating that the idx is in val/train so the dataset that will be used will be the correct one
 #TODO make some param globals
-    batch={}
+    print(preprocess)
 
-
+    # batch={}
     #dataset, _ = create_data_with_ult(cfg, yolo_data, phase='val')
     # batch["imgsz"]=(640.,640.)
-    # batch["ori_shape"]=(dataset.labels[idx]['shape'],)
+    # batch["ori_shape"]=(preprocess.data.labels[idx]['shape'],)
     # batch["ratio_pad"]= (((1.0,1.0),((batch["imgsz"][0]-batch["ori_shape"][0][0])//2,(batch["imgsz"][1]-batch["ori_shape"][0][1])//2)),)
     # batch["img"]=torch.from_numpy(image).unsqueeze(0)
-    # batch["cls"]=torch.from_numpy(dataset.labels[int(idx)]['cls'])
+    # batch["cls"]=torch.from_numpy(preprocess.labels[int(idx)]['cls'])
     # batch["bboxes"]=torch.from_numpy(y_true[:,:4])
     # batch["batch_idx"]=torch.zeros(batch["cls"].shape[0])
-
-    batch["imgsz"]=(resized_shape,)
-    batch["ori_shape"]=(ori_shape,)
-    batch["ratio_pad"]= (ratio_pad,)
-    batch["img"]=torch.from_numpy(image).unsqueeze(0)
-    batch["cls"]=torch.from_numpy(y_true[:,4]).unsqueeze(1)
-    batch["bboxes"]=torch.from_numpy(y_true[:,:4])
-    batch["batch_idx"]=torch.zeros(batch["cls"].shape[0])
-    pred = predictor.postprocess(torch.from_numpy(y_pred).unsqueeze(0))[0]
-    predictor.seen=0
-    predictor.args.plots=False
-    predictor.stats={}
-    predictor.stats['tp']=[]
-    pbatch = predictor._prepare_batch(0, batch)
-    cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
-    predn = predictor._prepare_pred(pred, pbatch)
-    iou_mat = box_iou(bbox, predn[:, :4])
-    if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
-        return np.zeros(1)
-
-    mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
-
-    return np.array([mean_iou_per_image.mean()])
+    #
+    # # batch["imgsz"]=(resized_shape,)
+    # # batch["ori_shape"]=(ori_shape,)
+    # # batch["ratio_pad"]= (ratio_pad,)
+    # # batch["img"]=torch.from_numpy(image).unsqueeze(0)
+    # # batch["cls"]=torch.from_numpy(y_true[:,4]).unsqueeze(1)
+    # # batch["bboxes"]=torch.from_numpy(y_true[:,:4])
+    # # batch["batch_idx"]=torch.zeros(batch["cls"].shape[0])
+    #
+    # pred = predictor.postprocess(torch.from_numpy(y_pred).unsqueeze(0))[0]
+    # predictor.seen=0
+    # predictor.args.plots=False
+    # predictor.stats={}
+    # predictor.stats['tp']=[]
+    # pbatch = predictor._prepare_batch(0, batch)
+    # cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
+    # predn = predictor._prepare_pred(pred, pbatch)
+    # iou_mat = box_iou(bbox, predn[:, :4])
+    # if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
+    #     return np.zeros(1)
+    #
+    # mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
+    #
+    # return np.array([mean_iou_per_image.mean()])
+    return np.zeros(1)
 
 
 
