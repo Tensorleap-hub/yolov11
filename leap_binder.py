@@ -160,7 +160,7 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
 
 # ---------------------------------------------------------metrics------------------------------------------------------
 @tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
-def iou_dic(image:np.ndarray, y_true: np.ndarray, y_pred: np.ndarray): #-> Dict[str, Union[float, int]]:
+def iou_dic(image:np.ndarray, y_true: np.ndarray, y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
 # TODO think how to do the same while indicating that the idx is in val/train so the dataset that will be used will be the correct one
 #TODO make some param globals
     batch={}
