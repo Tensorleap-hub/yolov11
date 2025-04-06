@@ -1,20 +1,20 @@
 task: detect
 mode: train
 datasets_dir:
-model: yolo11n.pt
+model: /users/yamtawachi/tensorleap/datasets/yolo11n.pt
 data: /Users/yamtawachi/tensorleap/ultralytics/ultralytics/cfg/datasets/coco8.yaml
-epochs: 1
+epochs: 100
 time:
 patience: 100
-batch: 16
+batch: 1
 imgsz: 640
 save: true
 save_period: -1
 cache: false
-device:
+device: cpu
 workers: 0
 project:
-name: train15
+name: train55
 exist_ok: false
 pretrained: true
 optimizer: auto
@@ -38,8 +38,8 @@ val: true
 split: val
 save_json: false
 save_hybrid: false
-conf:
-iou: 0.7
+conf: 0.25
+iou: 0.6
 max_det: 300
 half: false
 dnn: false
@@ -104,4 +104,4 @@ erasing: 0.4
 crop_fraction: 1.0
 cfg:
 tracker: botsort.yaml
-save_dir: /Users/yamtawachi/tensorleap/ultralytics/runs/detect/train15
+save_dir: /Users/yamtawachi/tensorleap/ultralytics/runs/detect/train55
