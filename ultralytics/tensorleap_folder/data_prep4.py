@@ -11,7 +11,7 @@ from ultralytics.utils.ops import xywh2xyxy
 from ultralytics.utils.plotting import Annotator, colors
 import torch
 import cv2
-from config import cfg
+from global_params import cfg
 from ultralytics.utils import ASSETS
 from ultralytics.models.yolo.detect import DetectionPredictor
 from ultralytics.utils.torch_utils import de_parallel
@@ -30,7 +30,7 @@ dataset_path="coco.yaml"
 
 callbacks = callbacks.get_default_callbacks()
 data =check_det_dataset(dataset_path, autodownload=True)
-dataset=build_yolo_dataset(cfg, data['train'], 1, data, mode='val', stride=32)
+dataset=build_yolo_dataset(cfg, data['val'], 1, data, mode='val', stride=32)
 dataloader=build_dataloader(dataset, 1, 0, shuffle=False, rank=-1)# build_yolo_dataset(self.args, img_path, batch, self.data, mode=mode, stride=self.stride)
 
 
@@ -45,8 +45,8 @@ predictor.dataloader=dataloader
 predictor_pred = DetectionPredictor(overrides=cfg)
 
 # 4. Load model
-model_pt = YOLO("tensorleap_folder/yolo11n.pt").model
-model_path = r"/Users/yamtawachi/tensorleap/ultralytics/yolo11s.h5"
+model_pt = YOLO("yolo11n.pt").model
+model_path = r"/Users/yamtawachi/tensorleap/ultralytics/yolov11s.h5"
 model_tf = tf.keras.models.load_model(model_path)
 predictor.init_metrics(de_parallel(model_pt))
 
@@ -70,24 +70,24 @@ for batch_i, batch in enumerate(dataloader):
     predictor.update_metrics(preds_pt, batch)
     predictor.update_metrics(preds_tf , batch)
 
-    pred_samp_plot_pt=plot_images(
-        batch["img"],
-        *output_to_target(preds_pt, max_det=predictor.args.max_det),
-        paths=batch["im_file"],
-        fname=predictor.save_dir / f"val_batch{batch_i}_pred.jpg",
-        names=predictor.names,
-        on_plot=predictor.on_plot,
-        save=False,
-        threaded=False
-    )
-    plt.imshow(pred_samp_plot_pt)
-    plt.axis("off")
-    plt.savefig(f"sample_{batch_i}_pred_pt.png")
-
-    val_smps_plot_pt=plot_images(batch["img"],batch["batch_idx"], batch["cls"].squeeze(-1),batch["bboxes"], names=predictor.names,save=False,threaded=False)
-    plt.imshow(val_smps_plot_pt)
-    plt.axis("off")
-    plt.savefig(f"sample_{batch_i}_gt_pt.png")
+    # pred_samp_plot_pt=plot_images(
+    #     batch["img"],
+    #     *output_to_target(preds_pt, max_det=predictor.args.max_det),
+    #     paths=batch["im_file"],
+    #     fname=predictor.save_dir / f"val_batch{batch_i}_pred.jpg",
+    #     names=predictor.names,
+    #     on_plot=predictor.on_plot,
+    #     save=False,
+    #     threaded=False
+    # )
+    # plt.imshow(pred_samp_plot_pt)
+    # plt.axis("off")
+    # plt.savefig(f"sample_{batch_i}_pred_pt.png")
+    #
+    # val_smps_plot_pt=plot_images(batch["img"],batch["batch_idx"], batch["cls"].squeeze(-1),batch["bboxes"], names=predictor.names,save=False,threaded=False)
+    # plt.imshow(val_smps_plot_pt)
+    # plt.axis("off")
+    # plt.savefig(f"sample_{batch_i}_gt_pt.png")
 
     pred_samp_plot_tf  = plot_images(
         batch["img"],
