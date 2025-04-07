@@ -52,7 +52,7 @@ def update_dict_count_cls(all_clss,clss_info):
         return {f"count of '{v}' class ({k})": 0.   for k, v in all_clss.items()}
     return {f"count of '{v}' class ({k})": int(clss_info[1][clss_info[0]==k]) if k in clss_info[0] else 0 for k, v in all_clss.items()}
 
-def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='area'):
+def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='area',nan_default_value=-1.):
     def get_mask(clss_info,k,info):
         mask=[clss_info[:, 0] == k][0]
         if info.ndim==2:
@@ -60,8 +60,8 @@ def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='are
         return mask
 
 
-    if np.isnan(info).any() or func_type not in ['mean', 'max', 'var', 'min','diff']:
-        return {f"{task}: {func_type} bbox of '{v}' class ({k})": 0.   for k, v in all_clss.items()}
+    if np.isnan(info).any():
+        return {f"{task}: {func_type} bbox of '{v}' class ({k})": nan_default_value   for k, v in all_clss.items()}
     if func_type=='mean':
         func=np.mean
     elif func_type=='var':
@@ -73,7 +73,7 @@ def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='are
     elif func_type=='diff':
         func = lambda x: np.max(x) - np.min(x)
 
-    return {f"{task}: {func_type} bbox of '{v}' class ({k})": func(info[get_mask(clss_info,k,info)]) if k in clss_info else 0 for k, v in all_clss.items()}
+    return {f"{task}: {func_type} bbox of '{v}' class ({k})": func(info[get_mask(clss_info,k,info)]) if k in clss_info else 0. for k, v in all_clss.items()}
 
 
 
