@@ -1,7 +1,8 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss, tensorleap_custom_metric
 from ultralytics.tensorleap_folder.global_params import cfg, yolo_data, criterion, all_clss, predictor
-from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader
+from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader, update_dict_count_cls, \
+    update_dict_bbox_cls_info, bbox_area_and_aspect_ratio, calculate_iou_all_pairs
 from typing import List, Dict, Union
 import numpy as np
 from code_loader import leap_binder
@@ -16,7 +17,6 @@ from code_loader.contract.visualizer_classes import LeapImageWithBBox
 from code_loader.utils import rescale_min_max
 from ultralytics.utils.plotting import output_to_target
 from ultralytics.utils.metrics import box_iou
-
 
 
 # ----------------------------------------------------data processing---------------------------------------------------
@@ -79,23 +79,48 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
     return idx
 
 
+
+
 @tensorleap_metadata("image info")
 def misc_metadata(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int]]:
-    # img = input_encoder(idx, data)
     clss_info=np.unique(data.data['dataloader'].labels[idx]["cls"],return_counts=True)
+    count_dict=update_dict_count_cls(all_clss, clss_info)
+    areas, aspect_ratios=bbox_area_and_aspect_ratio(data.data['dataloader'].labels[idx]["bboxes"],data.data['dataloader'][idx]['resized_shape'])
+    x_center, y_center = data.data['dataloader'].labels[idx]["bboxes"][:,0], data.data['dataloader'].labels[idx]["bboxes"][:,1]
+    occlusion_matrix, areas_in_pixels, union_in_pixels=calculate_iou_all_pairs(data.data['dataloader'].labels[idx]["bboxes"], data.data['dataloader'][idx]['resized_shape'])
+    non_zeros_occlusion_mask= [occlusion_matrix.sum(axis=1) != 0]
+    num_pix_in_im=data.data['dataloader'][idx]['resized_shape'][0]*data.data['dataloader'][idx]['resized_shape'][1]
+
+
     d = {
         "image path": data.data['dataloader'].im_files[idx],
-        "target path": data.data['dataloader'].label_files[idx],
-        "bbox_format": data.data['dataloader'].labels[idx]["bbox_format"],
-        # "class count":{all_clss.get(clss_info[0][i],'Unknown class'): clss_info[1][i] for i in range(len(clss_info[0]))},
-        "normalized image": data.data['dataloader'].labels[idx]["normalized"],
         "idx":idx,
-       # "brightness": img.mean(),
-        "# unique classes" : len(clss_info[0]),
+        "# unique classes" : len(clss_info[0]) if not np.isnan(clss_info[0]).any() else 0,
         "# of objects": clss_info[1].sum(),
-        # "data part": data.state.value,
-        # "im shape": {f"dim {i}": data.data['dataloader'].labels[idx]["shape"][i] for i in range(len(data.data['dataloader'].labels[idx]["shape"]))},
-     }
+        "mean bbox area": float(areas.mean()),
+        "var bbox area": float(areas.var()),
+        "mean aspect ratio": float(aspect_ratios.mean()),
+        "var aspect ratio": float(aspect_ratios.var()),
+        "mean bbox x loc": float(x_center.mean()),
+        "var bbox x loc": float(x_center.var()),
+        "mean bbox y loc": float(y_center.mean()),
+        "var bbox y loc": float(y_center.var()),
+        "bbox occlusion": float(occlusion_matrix.sum()/num_pix_in_im),
+        "var bbox occlusion": float(occlusion_matrix.sum(axis=1)[non_zeros_occlusion_mask[0]].var()/num_pix_in_im),
+        "max bbox occlusion": float(occlusion_matrix.sum(axis=1).max()/num_pix_in_im),
+        "bbox occlusion/union": float(occlusion_matrix.sum() / areas_in_pixels.sum()),
+        "max bbox occlusion/union": float((occlusion_matrix.sum(axis=1)/ areas_in_pixels).max()),
+
+    }
+
+    d.update(**count_dict)
+    feature_map = {'area': areas, 'ar': aspect_ratios,'x_center': x_center, 'y_center': y_center,'occlusion': occlusion_matrix/num_pix_in_im}
+    func_types = ['mean', 'var', 'max', 'min', 'diff']
+
+    for feat_name, feat_data in feature_map.items():
+        for func_type in func_types:
+            result_dict = update_dict_bbox_cls_info(all_clss,feat_data,data.data['dataloader'].labels[idx]["cls"],func_type,feat_name)
+            d.update(**result_dict)
     return d
 
 # ----------------------------------------------------------loss--------------------------------------------------------

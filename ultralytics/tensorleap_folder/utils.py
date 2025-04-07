@@ -3,8 +3,10 @@ import os
 import numpy as np
 import torch
 from code_loader.contract.datasetclasses import PreprocessResponse
+from code_loader.helpers.detection.utils import xywh_to_xyxy_format
 from ultralytics.data import  build_yolo_dataset
 from ultralytics.utils.plotting import output_to_target
+
 
 
 def metadata_label(digit_int) -> int:
@@ -44,3 +46,69 @@ def pred_post_process(y_pred, predictor, image, cfg):
     post_proc_pred[:, :4:2] /= image.shape[1]
     post_proc_pred[:, 1:4:2] /= image.shape[2]
     return post_proc_pred
+
+def update_dict_count_cls(all_clss,clss_info):
+    if np.isnan(clss_info[0]).any():
+        return {f"count of '{v}' class ({k})": 0.   for k, v in all_clss.items()}
+    return {f"count of '{v}' class ({k})": int(clss_info[1][clss_info[0]==k]) if k in clss_info[0] else 0 for k, v in all_clss.items()}
+
+def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='area'):
+    def get_mask(clss_info,k,info):
+        mask=[clss_info[:, 0] == k][0]
+        if info.ndim==2:
+            mask=mask[:,None]*mask[None,:]
+        return mask
+
+
+    if np.isnan(info).any() or func_type not in ['mean', 'max', 'var', 'min','diff']:
+        return {f"{task}: {func_type} bbox of '{v}' class ({k})": 0.   for k, v in all_clss.items()}
+    if func_type=='mean':
+        func=np.mean
+    elif func_type=='var':
+        func=np.var
+    elif func_type=='min':
+        func=np.min
+    elif func_type=='max':
+        func=np.max
+    elif func_type=='diff':
+        func = lambda x: np.max(x) - np.min(x)
+
+    return {f"{task}: {func_type} bbox of '{v}' class ({k})": func(info[get_mask(clss_info,k,info)]) if k in clss_info else 0 for k, v in all_clss.items()}
+
+
+
+def bbox_area_and_aspect_ratio(bboxes: np.ndarray, resized_shape):
+    widths = bboxes[:, 2]
+    heights = bboxes[:, 3]
+    areas = widths * heights
+    aspect_ratios = (heights*resized_shape[0]) / (widths*resized_shape[1])
+    return areas, aspect_ratios
+
+
+
+
+def calculate_iou_all_pairs(bboxes: np.ndarray, image_size: tuple):
+
+    areas_in_pixels = bboxes[:,2]*image_size[0]* bboxes[:,3]*image_size[1]
+
+    bboxes = np.asarray([xywh_to_xyxy_format(bbox[:-1]) for bbox in bboxes])
+    bboxes[:,::2] *= image_size[0]
+    bboxes[:,1::2] *= image_size[1]
+
+    num_bboxes = len(bboxes)
+    x_min = np.maximum(bboxes[:, 0][:, np.newaxis], bboxes[:, 0])
+    y_min = np.maximum(bboxes[:, 1][:, np.newaxis], bboxes[:, 1])
+    x_max = np.minimum(bboxes[:, 2][:, np.newaxis], bboxes[:, 2])
+    y_max = np.minimum(bboxes[:, 3][:, np.newaxis], bboxes[:, 3])
+    inter_w = np.clip(x_max - x_min, 0, None)
+    inter_h = np.clip(y_max - y_min, 0, None)
+    inter_area = inter_w * inter_h
+    np.fill_diagonal(inter_area, 0)
+    upper_tri_mask = np.triu(np.ones((num_bboxes, num_bboxes), dtype=bool), k=1)
+    occlusion_matrix = inter_area * upper_tri_mask
+    union_in_pixels= areas_in_pixels - np.sum(occlusion_matrix.T, axis=1)
+
+    return occlusion_matrix, areas_in_pixels, union_in_pixels
+
+
+
