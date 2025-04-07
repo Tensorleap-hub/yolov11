@@ -100,7 +100,7 @@ def misc_metadata(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, in
 
 # ----------------------------------------------------------loss--------------------------------------------------------
 
-@tensorleap_custom_loss("loss")
+@tensorleap_custom_loss("total_loss")
 def loss(pred80,pred40,pred20,gt,demo_pred):
     gt=np.squeeze(gt,axis=0)
     d={}
@@ -109,7 +109,7 @@ def loss(pred80,pred40,pred20,gt,demo_pred):
     d["batch_idx"] = torch.zeros_like(d['cls'])
     y_pred_torch = [torch.from_numpy(s) for s in [pred80,pred40,pred20]]
     all_loss,_= criterion(y_pred_torch, d)
-    return np.expand_dims(all_loss.unsqueeze(0).numpy(),axis=0)
+    return all_loss.unsqueeze(0).numpy()
 
 
 # ------------------------------------------------------visualizers-----------------------------------------------------
