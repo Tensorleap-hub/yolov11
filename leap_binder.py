@@ -182,5 +182,10 @@ def cost(pred80,pred40,pred20,gt):
     _,loss_parts= criterion(y_pred_torch, d)
     return {"box":loss_parts[0].unsqueeze(0).numpy(),"cls":loss_parts[1].unsqueeze(0).numpy(),"dfl":loss_parts[2].unsqueeze(0).numpy()}
 
+
+
+leap_binder.add_prediction(name='object detection', labels=["x", "y", "w", "h", "obj"] + [cl for cl in all_clss.values()])
+
 if __name__ == '__main__':
     leap_binder.check()
+
