@@ -358,7 +358,7 @@ class Exporter:
                 m.export = True
             if isinstance(m, (Detect, RTDETRDecoder)):  # includes all Detect subclasses like Segment, Pose, OBB
                 m.dynamic = self.args.dynamic
-                m.export = True
+                m.export = False
                 m.format = self.args.format
                 m.max_det = self.args.max_det
             elif isinstance(m, C2f) and not is_tf_format:
