@@ -33,7 +33,7 @@ def update_dict_count_cls(all_clss,clss_info):
 
 def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='area',nan_default_value=-1.):
     def get_mask(clss_info,k,info):
-        mask=[clss_info[:, 0] == k][0]
+        mask=clss_info[:, 0] == k
         if info.ndim==2:
             mask=mask[:,None]*mask[None,:]
         return mask
@@ -68,7 +68,7 @@ def bbox_area_and_aspect_ratio(bboxes: np.ndarray, resized_shape):
 
 def calculate_iou_all_pairs(bboxes: np.ndarray, image_size: tuple):
 
-    areas_in_pixels = bboxes[:,2]*image_size[0]* bboxes[:,3]*image_size[1]
+    areas_in_pixels = (bboxes[:,2]*image_size[0]* bboxes[:,3]*image_size[1]).astype(np.float32)
 
     bboxes = np.asarray([xywh_to_xyxy_format(bbox[:-1]) for bbox in bboxes])
     bboxes[:,::2] *= image_size[0]
@@ -86,10 +86,10 @@ def calculate_iou_all_pairs(bboxes: np.ndarray, image_size: tuple):
     upper_tri_mask = np.triu(np.ones((num_bboxes, num_bboxes), dtype=bool), k=1)
     occlusion_matrix = inter_area * upper_tri_mask
     union_in_pixels= areas_in_pixels - np.sum(occlusion_matrix.T, axis=1)
-    return occlusion_matrix, areas_in_pixels, union_in_pixels
+    return occlusion_matrix.astype(np.float32), areas_in_pixels.astype(np.float32), union_in_pixels.astype(np.float32)
 
 def xywh_to_xyxy_format(boxes):
     min_xy = boxes[..., :2] - boxes[..., 2:] / 2
     max_xy = boxes[..., :2] + boxes[..., 2:] / 2
     result = np.concatenate([min_xy, max_xy], -1)
-    return result
+    return result.astype(np.float32)

@@ -81,7 +81,7 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
 
 
 @tensorleap_metadata("image info")
-def misc_metadata(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int]]:
+def misc_metadata1(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, float]]:
     nan_default_value=-1.
     gt_data=gt_encoder(idx, data)
     cls_gt=np.expand_dims(gt_data[:,4],axis=1)
@@ -90,25 +90,16 @@ def misc_metadata(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, in
     clss_info=np.unique(cls_gt,return_counts=True)
     count_dict=update_dict_count_cls(all_clss, clss_info)
     areas, aspect_ratios=bbox_area_and_aspect_ratio(bbox_gt,data.data['dataloader'][idx]['resized_shape'])
-    x_center, y_center = bbox_gt[:,0], bbox_gt[:,1]
     occlusion_matrix, areas_in_pixels, union_in_pixels=calculate_iou_all_pairs(bbox_gt, data.data['dataloader'][idx]['resized_shape'])
     non_zeros_occlusion_mask= occlusion_matrix.sum(axis=1) != 0
-    num_pix_in_im=data.data['dataloader'][idx]['resized_shape'][0]*data.data['dataloader'][idx]['resized_shape'][1]
+    num_pix_in_im=(data.data['dataloader'][idx]['resized_shape'][0]*data.data['dataloader'][idx]['resized_shape'][1])
     no_nans_values= ~np.isnan(clss_info[0]).any()
 
     d = {
-        "image path": data.data['dataloader'].im_files[idx],
-        "idx":idx,
-        "# unique classes" : len(clss_info[0]) if no_nans_values else nan_default_value,
-        "# of objects": int(clss_info[1].sum()) if no_nans_values else nan_default_value,
         "mean bbox area": float(areas.mean()) if no_nans_values else nan_default_value,
         "var bbox area": float(areas.var()) if no_nans_values else nan_default_value,
         "mean aspect ratio": float(aspect_ratios.mean()) if no_nans_values else nan_default_value,
         "var aspect ratio": float(aspect_ratios.var()) if no_nans_values else nan_default_value,
-        "mean bbox x loc": float(x_center.mean()) if no_nans_values else nan_default_value,
-        "var bbox x loc": float(x_center.var()) if no_nans_values else nan_default_value,
-        "mean bbox y loc": float(y_center.mean()) if no_nans_values else nan_default_value,
-        "var bbox y loc": float(y_center.var()) if no_nans_values else nan_default_value,
         "bbox occlusion": float(occlusion_matrix.sum()/num_pix_in_im) if no_nans_values else nan_default_value,
         "var bbox occlusion": float(occlusion_matrix.sum(axis=1)[non_zeros_occlusion_mask].var() if np.sum(non_zeros_occlusion_mask)>0 else 0. /num_pix_in_im) if no_nans_values else nan_default_value,
         "max bbox occlusion": float(occlusion_matrix.sum(axis=1).max()/num_pix_in_im) if no_nans_values else nan_default_value,
@@ -118,7 +109,39 @@ def misc_metadata(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, in
     }
 
     d.update(**count_dict)
-    feature_map = {'area': areas, 'ar': aspect_ratios,'x_center': x_center, 'y_center': y_center,'occlusion': occlusion_matrix/num_pix_in_im}
+    feature_map = {'area': areas, 'ar': aspect_ratios,'occlusion': occlusion_matrix/num_pix_in_im}
+    func_types = ['mean', 'var', 'max', 'min', 'diff']
+
+    for feat_name, feat_data in feature_map.items():
+        for func_type in func_types:
+            result_dict = update_dict_bbox_cls_info(all_clss,feat_data,cls_gt,func_type,feat_name,nan_default_value)
+            d.update(**result_dict)
+    return d
+
+def misc_metadata2(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, float]]:
+    nan_default_value=-1.
+    gt_data=gt_encoder(idx, data)
+    cls_gt=np.expand_dims(gt_data[:,4],axis=1)
+    bbox_gt=gt_data[:,:4]
+
+    clss_info=np.unique(cls_gt,return_counts=True)
+    count_dict=update_dict_count_cls(all_clss, clss_info)
+    x_center, y_center = bbox_gt[:,0], bbox_gt[:,1]
+    no_nans_values= ~np.isnan(clss_info[0]).any()
+
+    d = {
+        "image path": data.data['dataloader'].im_files[idx],
+        "idx":idx,
+        "# unique classes" : len(clss_info[0]) if no_nans_values else nan_default_value,
+        "# of objects": int(clss_info[1].sum()) if no_nans_values else nan_default_value,
+        "mean bbox x loc": float(x_center.mean()) if no_nans_values else nan_default_value,
+        "var bbox x loc": float(x_center.var()) if no_nans_values else nan_default_value,
+        "mean bbox y loc": float(y_center.mean()) if no_nans_values else nan_default_value,
+        "var bbox y loc": float(y_center.var()) if no_nans_values else nan_default_value
+    }
+
+    d.update(**count_dict)
+    feature_map = {'x_center': x_center, 'y_center': y_center}
     func_types = ['mean', 'var', 'max', 'min', 'diff']
 
     for feat_name, feat_data in feature_map.items():
