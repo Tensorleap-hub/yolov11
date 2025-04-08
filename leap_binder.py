@@ -80,8 +80,8 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
     return idx
 
 
-@tensorleap_metadata("image info")
-def misc_metadata1(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, float]]:
+@tensorleap_metadata("image info a")
+def metadata1(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, float]]:
     nan_default_value=-1.
     gt_data=gt_encoder(idx, data)
     cls_gt=np.expand_dims(gt_data[:,4],axis=1)
@@ -117,8 +117,8 @@ def misc_metadata1(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, i
             result_dict = update_dict_bbox_cls_info(all_clss,feat_data,cls_gt,func_type,feat_name,nan_default_value)
             d.update(**result_dict)
     return d
-
-def misc_metadata2(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, float]]:
+@tensorleap_metadata("image info b")
+def metadata2(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, float]]:
     nan_default_value=-1.
     gt_data=gt_encoder(idx, data)
     cls_gt=np.expand_dims(gt_data[:,4],axis=1)

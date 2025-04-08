@@ -2,7 +2,7 @@ from code_loader.contract.datasetclasses import SamplePreprocessResponse
 
 from leap_binder import (input_encoder, preprocess_func_leap, gt_encoder,
                          leap_binder, loss, gt_bb_decoder, image_visualizer, bb_decoder,
-                         misc_metadata1, misc_metadata2, iou_dic, cost)
+                         metadata1, metadata2, iou_dic, cost)
 import tensorflow as tf
 import numpy as np
 from code_loader.helpers import visualize
@@ -27,8 +27,8 @@ def check_custom_test():
             image = input_encoder(idx, subset)
             concat = np.expand_dims(image, axis=0)
             gt = gt_encoder(idx, subset)
-            meta_data1=misc_metadata1(idx, subset)
-            meta_data2=misc_metadata1(idx, subset)
+            meta_data1=metadata1(idx, subset)
+            meta_data2=metadata1(idx, subset)
 
             y_pred = model([concat])
             iou=iou_dic(y_pred[0].numpy(), s_prepro)
