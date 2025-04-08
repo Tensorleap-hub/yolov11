@@ -184,7 +184,7 @@ def cost(pred80,pred40,pred20,gt):
 
 
 
-leap_binder.add_prediction(name='object detection', labels=["x", "y", "w", "h", "obj"] + [cl for cl in all_clss.values()])
+leap_binder.add_prediction(name='object detection', labels=["x", "y", "w", "h", "obj"] + [cl for cl in all_clss.values()], channel_dim=1)
 
 if __name__ == '__main__':
     leap_binder.check()
