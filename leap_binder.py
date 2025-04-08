@@ -81,20 +81,15 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
 
 @tensorleap_metadata("image info")
 def misc_metadata(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int]]:
-    # img = input_encoder(idx, data)
     clss_info=np.unique(data.data['dataloader'].labels[idx]["cls"],return_counts=True)
     d = {
         "image path": data.data['dataloader'].im_files[idx],
         "target path": data.data['dataloader'].label_files[idx],
         "bbox_format": data.data['dataloader'].labels[idx]["bbox_format"],
-        # "class count":{all_clss.get(clss_info[0][i],'Unknown class'): clss_info[1][i] for i in range(len(clss_info[0]))},
         "normalized image": data.data['dataloader'].labels[idx]["normalized"],
         "idx":idx,
-       # "brightness": img.mean(),
         "# unique classes" : len(clss_info[0]),
         "# of objects": clss_info[1].sum(),
-        # "data part": data.state.value,
-        # "im shape": {f"dim {i}": data.data['dataloader'].labels[idx]["shape"][i] for i in range(len(data.data['dataloader'].labels[idx]["shape"]))},
      }
     return d
 
