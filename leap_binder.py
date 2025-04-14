@@ -110,7 +110,7 @@ def metadata1(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, f
 
     d.update(**count_dict)
     feature_map = {'area': areas, 'ar': aspect_ratios,'occlusion': occlusion_matrix/num_pix_in_im}
-    func_types = ['mean', 'var', 'max', 'min', 'diff']
+    func_types = ['mean', 'var', 'max', 'min']
 
     for feat_name, feat_data in feature_map.items():
         for func_type in func_types:
@@ -142,7 +142,7 @@ def metadata2(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, f
 
     d.update(**count_dict)
     feature_map = {'x_center': x_center, 'y_center': y_center}
-    func_types = ['mean', 'var', 'max', 'min', 'diff']
+    func_types = ['mean', 'var', 'max', 'min']
 
     for feat_name, feat_data in feature_map.items():
         for func_type in func_types:
@@ -238,6 +238,44 @@ def cost(pred80,pred40,pred20,gt):
     y_pred_torch = [torch.from_numpy(s) for s in [pred80,pred40,pred20]]
     _,loss_parts= criterion(y_pred_torch, d)
     return {"box":loss_parts[0].unsqueeze(0).numpy(),"cls":loss_parts[1].unsqueeze(0).numpy(),"dfl":loss_parts[2].unsqueeze(0).numpy()}
+
+
+
+@tensorleap_custom_metric("metadata_metric", direction=MetricDirection.Downward)
+def metadata_metric(y_pred: np.ndarray,preprocess: SamplePreprocessResponse) -> Dict[str, Union[str, int, float]]:
+    nan_default_value=-1.
+    # gt_data=gt_encoder(int(preprocess.sample_ids), preprocess.preprocess_response)
+    cls_gt=np.expand_dims(y_pred[:,4],axis=1)
+    bbox_gt=y_pred[:,:4]
+
+    clss_info=np.unique(cls_gt,return_counts=True)
+    count_dict=update_dict_count_cls(all_clss, clss_info)
+    x_center, y_center = bbox_gt[:,0], bbox_gt[:,1]
+    no_nans_values= ~np.isnan(clss_info[0]).any()
+
+    d = {
+
+        "# unique classes" : len(clss_info[0]) if no_nans_values else nan_default_value,
+        "# of objects": int(clss_info[1].sum()) if no_nans_values else nan_default_value,
+        "mean bbox x loc": float(x_center.mean()) if no_nans_values else nan_default_value,
+        "var bbox x loc": float(x_center.var()) if no_nans_values else nan_default_value,
+        "mean bbox y loc": float(y_center.mean()) if no_nans_values else nan_default_value,
+        "var bbox y loc": float(y_center.var()) if no_nans_values else nan_default_value
+    }
+
+    d.update(**count_dict)
+    feature_map = {'x_center': x_center, 'y_center': y_center}
+    func_types = ['mean', 'var', 'max', 'min']
+
+    for feat_name, feat_data in feature_map.items():
+        for func_type in func_types:
+            result_dict = update_dict_bbox_cls_info(all_clss,feat_data,cls_gt,func_type,feat_name,nan_default_value)
+            d.update(**result_dict)
+    return d
+
+
+
+# ---------------------------------------------------------main------------------------------------------------------
 
 
 
