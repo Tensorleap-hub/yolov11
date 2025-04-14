@@ -248,3 +248,4 @@ leap_binder.add_prediction(name='concatenate_80', labels=[str(i) for i in range(
 
 if __name__ == '__main__':
     leap_binder.check()
+
