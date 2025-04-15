@@ -314,7 +314,6 @@ def check_det_dataset(dataset, autodownload=True):
         (dict): Parsed dataset information and paths.
     """
     file = check_file(dataset)
-
     # Download (optional)
     extract_dir = ""
     if zipfile.is_zipfile(file) or is_tarfile(file):
