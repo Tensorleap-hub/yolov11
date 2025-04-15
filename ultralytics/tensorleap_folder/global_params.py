@@ -21,12 +21,13 @@ def get_yolo_data(cfg):
 def get_criterion(model_path):
     from ultralytics import YOLO
     from ultralytics.utils import IterableSimpleNamespace
-    model_base = YOLO(model_path) # TODO - make this part of the data path and read from there or load (maybe use ultralytics way)
+    model_base = YOLO(model_path)
     criterion = model_base.init_criterion()
     criterion.hyp = IterableSimpleNamespace(**criterion.hyp)
-    criterion.hyp.box = 7.5
-    criterion.hyp.cls = 0.5
-    criterion.hyp.dfl = 1.5
+    criterion.hyp.box = cfg.box
+    criterion.hyp.cls = cfg.box
+    criterion.hyp.dfl = cfg.box
+
     return criterion
 def get_dataset_yaml(cfg):
     dataset_yaml_file=check_file(cfg.data)
