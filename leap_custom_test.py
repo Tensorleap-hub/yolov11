@@ -2,7 +2,7 @@ from code_loader.contract.datasetclasses import SamplePreprocessResponse
 
 from leap_binder import (input_encoder, preprocess_func_leap, gt_encoder,
                          leap_binder, loss, gt_bb_decoder, image_visualizer, bb_decoder,
-                         iou_dic, cost, metadata_metric, metadata_per_img)
+                         iou_dic, cost,  metadata_per_img)
 import tensorflow as tf
 import numpy as np
 from code_loader.helpers import visualize
@@ -31,7 +31,7 @@ def check_custom_test():
 
             y_pred = model([concat])
 
-            d_metrics=metadata_metric(y_pred[0].numpy(),s_prepro)
+            # d_metrics=metadata_metric(y_pred[0].numpy(),s_prepro)
 
             iou=iou_dic(y_pred[0].numpy(), s_prepro)
             total_loss=loss(y_pred[1].numpy(),y_pred[2].numpy(),y_pred[3].numpy(),np.expand_dims(gt,axis=0), y_pred[0].numpy())
