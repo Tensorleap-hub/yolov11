@@ -93,3 +93,20 @@ def xywh_to_xyxy_format(boxes):
     max_xy = boxes[..., :2] + boxes[..., 2:] / 2
     result = np.concatenate([min_xy, max_xy], -1)
     return result.astype(np.float32)
+
+
+# import torch
+# import torch.nn.functional as F
+#
+#
+# def sharpness_torch(image: torch.Tensor) -> torch.Tensor:
+#     if image.ndim == 4:
+#         image = image.mean(dim=1, keepdim=True)
+#
+#     lap_kernel = torch.tensor([[0, 1, 0],
+#                                [1, -4, 1],
+#                                [0, 1, 0]], dtype=image.dtype, device=image.device).view(1, 1, 3, 3)
+#
+#     lap = F.conv2d(image, lap_kernel, padding=1)
+#     var = lap.var(dim=[2, 3])
+#     return var.squeeze()
