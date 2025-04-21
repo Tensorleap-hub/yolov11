@@ -28,9 +28,8 @@ def pred_post_process(y_pred, predictor, image, cfg):
     return post_proc_pred
 def update_dict_count_cls(all_clss,clss_info):
     if np.isnan(clss_info[0]).any():
-        return {f"count of '{v}' class ({k})": np.nan   for k, v in all_clss.items()}
-    return {f"count of '{v}' class ({k})": int(clss_info[1][clss_info[0]==k]) if k in clss_info[0] else np.nan  for k, v in all_clss.items()}
-
+        return {f"count of '{v}' class ({k})": 0.0   for k, v in all_clss.items()}
+    return {f"count of '{v}' class ({k})": int(clss_info[1][clss_info[0]==k]) if k in clss_info[0] else 0.0  for k, v in all_clss.items()}
 def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='area',nan_default_value=-1.):
     def get_mask(clss_info,k,info):
         mask=clss_info[:, 0] == k
