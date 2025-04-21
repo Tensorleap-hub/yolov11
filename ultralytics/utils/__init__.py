@@ -1209,7 +1209,7 @@ class SettingsManager(JSONDict):
         self.version = version
         self.defaults = {
             "settings_version": version,  # Settings schema version
-            "datasets_dir": Path(DEFAULT_CFG.path) if getattr(DEFAULT_CFG, 'path', False) else str(datasets_root / "datasets"),  # Datasets directory   TENSORLEAP CHANGE
+            "datasets_dir": Path(DEFAULT_CFG.tensorleap_path) if getattr(DEFAULT_CFG, 'tensorleap_path', False) else str(datasets_root / "datasets"),  # Datasets directory   TENSORLEAP CHANGE
             "weights_dir": str(root / "weights"),  # Model weights directory
             "runs_dir": str(root / "runs"),  # Experiment runs directory
             "uuid": hashlib.sha256(str(uuid.getnode()).encode()).hexdigest(),  # SHA-256 anonymized UUID hash
