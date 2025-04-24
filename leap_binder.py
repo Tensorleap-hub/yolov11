@@ -23,13 +23,23 @@ from ultralytics.utils.metrics import box_iou
 
 @tensorleap_preprocess()
 def preprocess_func_leap() -> List[PreprocessResponse]:
-    data_loader_val,n_sampels_val=create_data_with_ult(cfg,yolo_data,phase='val')
-    data_loader_train,n_sampels_train=create_data_with_ult(cfg,yolo_data,phase='train')
-
-    val = PreprocessResponse(sample_ids=list(range(n_sampels_val)), data={'dataloader':data_loader_val},sample_id_type=int, state=DataStateType.validation)
-    train = PreprocessResponse(sample_ids=list(range(n_sampels_train)), data={'dataloader':data_loader_train},sample_id_type=int, state=DataStateType.training)
-    response = [val,train]
-    return response
+    dataset_types = [DataStateType.training, DataStateType.validation]
+    phases = ['train', 'val']
+    responses = []
+    if cfg.tensorleap_use_test:
+        phases.append('test')
+        dataset_types.append(DataStateType.test)
+    if cfg.tensorleap_use_unlabeled:
+        phases.append('unlabeled')
+        dataset_types.append(DataStateType.unlabeled)
+    for phase, dataset_type in zip(phases, dataset_types):
+        data_loader, n_samples = create_data_with_ult(cfg, yolo_data, phase=phase)
+        responses.append(
+            PreprocessResponse(sample_ids=list(range(n_samples)),
+                               data={'dataloader':data_loader},
+                               sample_id_type=int,
+                               state=dataset_type))
+    return responses
 
 
 # ------------------------------------------input and gt----------------------------------------------------------------
