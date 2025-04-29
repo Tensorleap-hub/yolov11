@@ -15,7 +15,6 @@ def check_custom_test():
     if check_generic:
         leap_binder.check()
     print("started custom tests")
-
     # load the model
     model_path = r"yolov11sb.h5"
     model = tf.keras.models.load_model(model_path)
