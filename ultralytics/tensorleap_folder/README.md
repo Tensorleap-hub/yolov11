@@ -109,7 +109,6 @@ Examining samples within this cluster reveals three potential labeling issues:
 </div>
 
 As a result, the model tends to **detect only some of the books**, and often picks different ones than the ground truth. The model also struggles to distinguish between individual books versus several books.
-
 To investigate further, we explored the **sample analysis** provided by the platform, which offers a layered approach — from latent structure to visual inspection and **attention heatmaps** (Figure 11). The final layer of the model shows distinct focus points on four separate books on the top shelf, while the lower shelf displays a single, broad focus area, suggesting the model is treating the entire bookshelf as one object. Interestingly, when we are looking on previous layers’s heatmaps , we observed that layer number 45 correctly focuses on individual books on the lower shelf. This suggests that enhancing the influence of this layer on the final prediction could help mitigate the performance issues.
 
 <div align="center">
@@ -119,16 +118,15 @@ To investigate further, we explored the **sample analysis** provided by the plat
 </div>
 
 To support the hypothesis that inconsistent book labeling significantly impacts the cluster’s performance, using the platform, we generated a graph of loss versus the number of books per sample (Figure 12). The results show a clear trend: **as the number of books in each sample increases, so does the loss value**.
+
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure12.png" alt="Description"/>
   <figcaption><em>Figure 12 – Loss increases with number of books per sample.
 </em></figcaption>
 </div>
 
-
+---
 ## Wrapping Up
-
-Tensorleap shortens model development time by surfacing root causes of error and suggesting actionable improvements. Instead of spending weeks manually debugging performance drops, teams can quickly iterate on both models and data. The result: fewer surprises in production, better generalization, and more trustworthy AI systems.
-## Next Steps
+This analysis showed how Tensorleap can uncover hidden patterns and problems in complex models like YOLOv11. By exploring latent space, metadata correlations, and model attention, we identified key performance issues such as overfitting, small object detection challenges, and labeling inconsistencies. These insights help guide targeted improvements, turning raw metrics into actionable understanding
 * Curious how you can benefit from Tensorleap? [Reach out for a demo](https://tensorleap.ai/request-demo/).
 * Want to explore this Tensorleap use-case yourself? [Check out our implementation](https://github.com/Tensorleap-hub/yolov11).
