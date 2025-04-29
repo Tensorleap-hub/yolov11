@@ -5,7 +5,7 @@
 
 task: detect # (str) YOLO task, i.e. detect, segment, classify, pose, obb
 mode: val # (str) YOLO mode, i.e. train, val, predict, export, track, benchmark
-tensorleap_path: /Users/tomkoren/tensorleap/data/coco128  #folder where coco dataset folder will be created --TENSORLEAP FLAG
+tensorleap_path: /Users/yamtawachi/tensorleap/datasets  #folder where coco dataset folder will be created --TENSORLEAP FLAG
 tensorleap_use_test: False
 tensorleap_use_unlabeled: False
 # Train settings -------------------------------------------------------------------------------------------------------
