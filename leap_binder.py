@@ -82,7 +82,7 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
 
 @tensorleap_metadata("image info a")
 def metadata_per_img(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, float]]:
-    nan_default_value=-1
+    nan_default_value=None
     gt_data=gt_encoder(idx, data)
     cls_gt=np.expand_dims(gt_data[:,4],axis=1)
     bbox_gt=gt_data[:,:4]
@@ -103,7 +103,7 @@ def metadata_per_img(idx: int, data: PreprocessResponse) -> Dict[str, Union[str,
             "max bbox area": float(np.max(areas)) if no_nans_values else nan_default_value,
             "mean bbox overlap": float(occlusion_matrix.sum() / areas_in_pixels.sum()) if no_nans_values else nan_default_value,
             "max bbox overlap": float((occlusion_matrix.sum(axis=1)/ areas_in_pixels).max()) if no_nans_values else nan_default_value,
-            'no info': float(1.0) if no_nans_values else 0.0,
+            # 'no info': float(1.0) if no_nans_values else 0.0,
 
         }
     d.update(**count_dict)
