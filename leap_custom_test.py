@@ -23,7 +23,7 @@ def check_custom_test():
 
     responses = preprocess_func_leap()
     for subset in responses:
-        for idx in range(2):
+        for idx in range(20):
             s_prepro=SamplePreprocessResponse(np.array(idx), subset)
             image = input_encoder(idx, subset)
             concat = np.expand_dims(image, axis=0)
