@@ -3,7 +3,16 @@ from types import SimpleNamespace
 import torch
 import yaml
 from ultralytics import YOLO
+import re
 
+
+def yolo_version_check(model_path):
+    model_name = model_path.stem
+    match = re.fullmatch(r'yolov5([a-z])', model_name)
+    exported_path= model_path.with_name(model_name + 'u' + '.onnx') if match else model_path.with_suffix('.onnx')
+    if not exported_path.exists():
+        raise FileNotFoundError(f"File {exported_path} not found, check the name of the yolo exported version.")
+    return exported_path
 
 
 def dict_to_namespace(d):
@@ -18,7 +27,6 @@ def export_to_onnx(cfg):
     model = YOLO(cfg.model if hasattr(cfg, "model") else "yolo11s.pt")
     model.export(format="onnx", nms=False, export_train_head=True)
 
-
 def start_export():
     file_path = 'ultralytics/cfg/default.yaml'
     with open(file_path, 'r') as file:
@@ -32,7 +40,7 @@ def start_export():
         f"❌ {model_path!r} is not inside tensorleap path {cfg.tensorleap_path!r}" )
     cfg.model=model_path
     export_to_onnx(cfg)
-    exported_model_path=cfg.model.with_suffix('.onnx')
+    exported_model_path=yolo_version_check(model_path)
     print(f"Model exported to ONNX: {exported_model_path}")
     return str(exported_model_path)
 

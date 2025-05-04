@@ -52,7 +52,7 @@ def check_custom_test():
 if __name__ == '__main__':
     check_generic = True
     plot_vis= True
-    model_path = r'/Users/yamtawachi/tensorleap/datasets/models/yolo11sb.h5' # Choose None if only pt version available or your  h5/onnx model's path.
+    model_path =  None #r'/Users/yamtawachi/tensorleap/datasets/models/yolo11s.h5' # Choose None if only pt version available or your  h5/onnx model's path.
 
 
     check_custom_test()
