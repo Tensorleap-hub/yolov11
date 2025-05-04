@@ -1,8 +1,6 @@
 import os
-
 from code_loader.contract.datasetclasses import SamplePreprocessResponse
 from code_loader.contract.enums import DataStateType
-
 from leap_binder import (input_encoder, preprocess_func_leap, gt_encoder,
                          leap_binder, loss, gt_bb_decoder, image_visualizer, bb_decoder,
                          misc_metadata, iou_dic, cost)
@@ -14,28 +12,26 @@ from code_loader.helpers import visualize
 
 
 def check_custom_test():
-    check_generic = True
-    plot_vis= True
     if check_generic:
         leap_binder.check()
+    m_path= model_path if model_path!=None else 'None_path'
     print("started custom tests")
-
-    # load the model
-    model_path = r"yolov11m.onnx"
-    if not os.path.exists(model_path):
+    if not os.path.exists(m_path):
         from export_model_to_tf import start_export #TODO - currently supports only onnx
-        model_path=start_export
-
-    model = tf.keras.models.load_model(model_path) if model_path.endswith(".h5") else ort.InferenceSession(model_path)
+        m_path=start_export()
+    keras_model=m_path.endswith(".h5")
+    model = tf.keras.models.load_model(m_path) if keras_model else ort.InferenceSession(m_path)
 
     responses = preprocess_func_leap()
     for subset in responses:
-        for idx in range(2):
+        for idx in range(20):
             s_prepro=SamplePreprocessResponse(np.array(idx), subset)
             image = input_encoder(idx, subset)
             concat = np.expand_dims(image, axis=0)
             meta_data=misc_metadata(idx, subset)
-            y_pred = model([concat])
+            y_pred = model([concat]) if keras_model else model.run(None, {model.get_inputs()[0].name: concat})
+            if not keras_model:
+                y_pred=[tf.convert_to_tensor(p)  for p in y_pred]
             if subset.state != DataStateType.unlabeled:
                 iou = iou_dic(y_pred[0].numpy(), s_prepro)
                 gt = gt_encoder(idx, subset)
@@ -54,4 +50,9 @@ def check_custom_test():
 
 
 if __name__ == '__main__':
+    check_generic = True
+    plot_vis= True
+    model_path = r'/Users/yamtawachi/tensorleap/datasets/models/yolo11sb.h5' # Choose None if only pt version available or your  h5/onnx model's path.
+
+
     check_custom_test()
