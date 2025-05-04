@@ -16,11 +16,8 @@ def check_custom_test():
     if check_generic:
         leap_binder.check()
     print("started custom tests")
-
-    # load the model
     model_path = r"yolov11sb.h5"
     model = tf.keras.models.load_model(model_path)
-
     responses = preprocess_func_leap()
     for subset in responses:
         for idx in range(20):
@@ -43,7 +40,6 @@ def check_custom_test():
                 visualize(pred_img)
                 if subset.state != DataStateType.unlabeled:
                     visualize(gt_img)
-
     print("finish tests")
 
 
