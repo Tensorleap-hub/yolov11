@@ -1,3 +1,5 @@
+import os
+
 from code_loader.contract.datasetclasses import SamplePreprocessResponse
 from code_loader.contract.enums import DataStateType
 
@@ -5,6 +7,7 @@ from leap_binder import (input_encoder, preprocess_func_leap, gt_encoder,
                          leap_binder, loss, gt_bb_decoder, image_visualizer, bb_decoder,
                          misc_metadata, iou_dic, cost)
 import tensorflow as tf
+import onnxruntime as ort
 import numpy as np
 from code_loader.helpers import visualize
 
@@ -18,8 +21,12 @@ def check_custom_test():
     print("started custom tests")
 
     # load the model
-    model_path = r"yolov11sb.h5"
-    model = tf.keras.models.load_model(model_path)
+    model_path = r"yolov11m.onnx"
+    if not os.path.exists(model_path):
+        from export_model_to_tf import start_export #TODO - currently supports only onnx
+        model_path=start_export
+
+    model = tf.keras.models.load_model(model_path) if model_path.endswith(".h5") else ort.InferenceSession(model_path)
 
     responses = preprocess_func_leap()
     for subset in responses:
