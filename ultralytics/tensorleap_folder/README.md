@@ -1,95 +1,91 @@
 # Object Detection Using Yolov11 Model
 
-
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure1.png" alt="Description"/>
-  <figcaption><em>Figure 1: Tensorleap’s latent space.</em></figcaption>
+  <figcaption><em>Figure 1 – Left: Final layer: Focus on grouped books (bottom) and individual books (top), Right: Shallow Layer: Focus on individual books across shelves.</em></figcaption>
 </div>
 
-
 ## Introduction
-
-This project builds on **Ultralytics** repository, utilizing [YOLOv11](https://docs.ultralytics.com/models/yolo11/) model for **object detection** on [COCO](https://cocodataset.org/#home) **dataset**, which contains 122,000 natural images spanning 80 object classes.
-In this work, we leverage Tensorleap to explore the model’s latent space, uncover hidden patterns, detect mislabeled samples, in order to **improve model performance** and dataset quality.
-
+This project builds on **Ultralytics** repository, utilizing [YOLOv11](https://docs.ultralytics.com/models/yolo11/) model for **object detection** on [COCO](https://cocodataset.org/#home) **dataset**, which contains 122,000 natural images across 80 object classes.
+Using Tensorleap, we analyze the model’s latent space, uncover hidden patterns, identify mislabeled samples, in order to **improve model performance** and dataset quality.
 ---
 ## Tensorleap Platform
-
-Tensorleap is a platform for **visualizing, interpreting, and explaining deep learning models**. It helps teams diagnose issues, optimize performance, and build more reliable AI models. While the platform contains many different features, we will elaborate next on two of them which are most relevant for this blog.
+Tensorleap is a platform for **visualizing, interpreting, and explaining deep learning models**. It helps teams diagnose issues, optimize performance, and build more reliable AI models. Among its many features, we’ll focus on two that are particularly relevant to this blog post.
 ### Latent Space
-Tensorleap clusters the high dimensional latent space of the model and preforms **Population Exploration (PE)** which visualizes the  latent space by reducing its dimensions using t-SNE or PCA techniques. Each of these clusters semantic meaning is coherent, **revealing meaningful groups** that reflect how the model understands the data.
-Figure 2 colors the latent space based on the amount of train objects (labels) in each sample, the bigger and redder the dot the more train objects appear in the image. In Figure 1 we can see that these samples are clustered together in cluster 13, highlighting the model’s ability to organize semantically similar content.
+Tensorleap clusters the high dimensional latent space of the model and performs **Population Exploration (PE)** which visualizes the latent space by reducing its dimensions using t-SNE or PCA techniques. The resulting clusters exhibit semantic consistency, revealing meaningful groupings that reflect the model’s understanding of the data.
 
+Figure 2 colors the latent space based on the amount of “train” objects (labels) in each sample- the bigger and redder the dot the more train objects appear in the image.
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure2.png" alt="Description"/>
-  <figcaption><em>Figure 2 – Latent space colored by amount of train objects in each sample. The bigger and redder the dot the more train objects appear in the image. Red rectangle marks the train-related cluster.</em></figcaption>
+  <figcaption><em>Figure 2 – Latent space colored by amount of train objects in each sample. The bigger and redder the dot the more train objects appear in the image. Red rectangle marks the train-related cluster.
+</em></figcaption>
+</div>
+
+ In Figure 3 we can see that these samples are clustered together in cluster 13, highlighting the model’s ability to organize semantically similar content.
+
+<div align="center">
+  <img src="/ultralytics/tensorleap_folder/assets/Figure3.png" alt="Description"/>
+  <figcaption><em>Figure 3 – Tensorleap’s latent space clustered into semantic groups.
+</em></figcaption>
 </div>
 
 
 ### Automatically Generated Insights
 
-Tensorleap automatically **generate insights** based on the PE. These insights are crucial for identifying model weaknesses and guiding targeted improvements. Each insight is associated with a specific cluster, presents **correlations with data attributes** (metadata), and highlights one of the following characteristics:
+Tensorleap automatically **generate insights** based on the model’s latent space. These insights are crucial for identifying model weaknesses and guiding targeted improvements. Each insight is associated with a specific cluster, presents **correlations with data attributes** (metadata), and highlights one of the following characteristics:
 
 - Low-performance clusters.
 
 - Overfitted regions.
 
-- Areas of over- or under-representation. 
+- Areas of over or under representation.
 ---
 
 ## Project Insights and Analysis
-
-One of the insights generated by the platform, was an **over-representation** insight (Figure 3), which is linked to the train-related cluster (Figure 2, cluster 13).
-
-
-<div align="center">
-  <img src="/ultralytics/tensorleap_folder/assets/Figure3.png" alt="Description"/>
-  <figcaption><em>Figure 3 – Over representation insight, reveals a disproportionately high number of training samples compared to very few validation samples..</em></figcaption>
-</div>
-
-
-This insight reveals a disproportionately high number of training samples compared to very few validation samples, highlighting a **potential imbalance** in the data distribution.  It also exhibits a **low bounding box loss** ( which quantifies the error between predicted and ground truth object location) on the **training set** (0.7914), and a **high bounding box loss** on the **validation set** (1.0155). It suggests that the training samples contribute **limited new information**.
-Additionally, the insight shows a strong **correlation** between the cluster’s samples and a metadata of **low occlusion** (different objects in the image contain small to no overlapping sections), indicates that this cluster contains relatively **“easy” examples**. Based on this insight, we hypothesize that the model has **overfitted** to these simple cases, memorizing their patterns rather than learning to generalize. Consequently, when encountering semantically similar but statistically different validation samples, the model struggles to perform accurately.
-To validate this hypothesis, we visualized some of those samples (Figure 4). As can be seen, the train images contain very minimal occlusion compared to the validation.
-
+### Insight: Over Representation cluster of Samples Containing Train Objects
+One of the insights generated by the platform, was an **over-representation** cluster (Figure 4), which is linked to cluster 13 - the train-related cluster (Figure 2).
+Low-performance clusters.
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure4.png" alt="Description"/>
-  <figcaption><em>Figure 4- Visualization of representative samples from cluster 13. Upper- ground truth, lower- predicted, right- validation set samples, left, train set samples.</em></figcaption>
+  <figcaption><em>Figure 4 – Over representation insight, reveals a disproportionately high number of training samples compared to very few validation samples.
+</em></figcaption>
 </div>
 
+This insight reveals a disproportionately high number of training samples compared to very few validation samples, highlighting a **potential imbalance** in the data distribution. It also exhibits a **low bounding box** loss (which quantifies the error between predicted and ground truth object location) on the **training set**, and a **high bounding box loss** on the **validation set**. It suggests that the training samples contribute **limited new information**.
+Additionally, the insight shows a strong **correlation** between the cluster’s samples and a metadata of **low occlusion** (different objects in the image contain small to no overlapping regions), indicates that this cluster contains relatively **“easy”** examples. 
 
-### Small Objects
+Based on this insight, we hypothesize that the model has **overfitted** to these simple cases, memorizing their patterns rather than learning to generalize. 
 
-Based on the latent space, the platform extracted an additional insight as shown below (Figure 5). This insight identifies a **low performance cluster**, and is particularly significant as it impacts a **large number of samples** (8,153) and is associated with the highest loss. Furthermore, this cluster shows **strong correlations with metadata** indicators of samples containing **small objects**, such as low mean and median bounding box sizes. Coloring the latent space of this cluster (Figure 5) by median bounding box size further supports the insight that this cluster is associated with small object characteristics. Understanding and addressing the root causes of this issue can lead to substantial improvements in the model’s overall performance.
-
+To validate this hypothesis, we visualized some of those samples (Figure 5). As can be seen, the train images contain very minimal occlusion compared to the validation.
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure5.png" alt="Description"/>
-  <figcaption><em>Figure 5- Small objects insight, along with the PCA derived PE, colored by median bounding box size (bluer and smaller dots represents smaller values).</em></figcaption>
+  <figcaption><em>Figure 5- Visualization of representative samples from cluster 13. Upper row- ground truth, lower- predicted, right- validation set samples, left, train set samples.
+</em></figcaption>
 </div>
 
+As a result, the model performs poorly when it encounters validation samples that are a bit different, for example, images with higher overlap between objects than seen during training.
 
-An immediate hypothesis from this insight is that **YOLOv11 struggles with detecting small objects**. A quick review of samples from this cluster supports this idea. As shown in figure 6, while the ground truth include many small objects, the model fails to detect them, identifying only the largest objects in the image. For example, the left column of figure 6 shows that the model manage to capture the large objects (persons, umbrella) but failed detecting the smaller ones (boats in the river). Additionally, **platform-generated heatmap** reveals that the model pays little attention to the regions containing small objects, further reinforcing this conclusion (Figure 7).
-
+### Insight: Low performance cluster on images containes small objects
+Based on the latent space, the platform extracted an additional insight as shown below (Figure 6). 
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure6.png" alt="Description"/>
-  <figcaption><em>Figure 6- Representative cluster’s samples. Upper row- ground truth, lower row- predictions.
+  <figcaption><em>Figure 6- Small objects insight, along with the PCA derived PE, colored by median bounding box size (bluer and smaller dots represents smaller values).
 </em></figcaption>
 </div>
 
+An immediate hypothesis from this insight is that YOLOv11 **struggles** with **detecting small objects**. A quick review of samples from this cluster supports this idea as shown in figure 7. For example, the left column of figure 7 shows that the model manage to capture the large objects (persons, umbrella) but failed detecting the smaller ones (boats in the river). 
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure7.png" alt="Description"/>
-  <figcaption><em>Figure 7 – Example image from the cluster, the models fails to detect the small cars. From left to right: Ground truth, prediction, heatmap.
+  <figcaption><em>Figure 7- Representative cluster’s samples. Upper row- ground truth, lower row- predictions.
 </em></figcaption>
 </div>
 
-
 As a final validation, a line graph from the platform (Figure 8) confirms our assumption: As the median **bounding box area** in a sample **decreases**, the **loss increases**. This clear trend explains the poor performance observed in the two clusters and highlights the model’s difficulty in handling small objects.
-
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure8.png" alt="Description"/>
@@ -97,13 +93,9 @@ As a final validation, a line graph from the platform (Figure 8) confirms our as
 </em></figcaption>
 </div>
 
-
-Based on this analysis, our recommendation is to adjust Ultralytics’ default loss’s (which is constructed as  a weighted sum of the bbox loss, class loss and focal loss) weights to place greater emphasis on focal loss to penalize small object errors more heavily.
-
-### Books Objects Annotations Problem
-
-Another low performance cluster, as shown in Figure 12 contains 8,826 samples with a relatively **high average loss** of 2.941. To understand its semantic meaning, we colored the PE based on object labels. This revealed that the cluster has a high concentration of samples **containing books**, as illustrated in Figure 9.
-
+Based on this analysis, our recommendation is to adjust the loss (which is constructed as a weighted sum of the bbox loss, class loss and focal loss) weights to place greater emphasis on focal loss to penalize small object errors more heavily.
+### Insight: Low performance cluster on images with Books Objects
+Another low performance cluster, as shown in Figure 9 contains 8,826 samples with a relatively **high average loss**. To understand its semantic meaning, we colored the PE based on object labels. This revealed that the cluster has a high concentration of samples **containing books**, as illustrated in Figure 10.
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure9.png" alt="Description"/>
@@ -111,15 +103,11 @@ Another low performance cluster, as shown in Figure 12 contains 8,826 samples wi
 </em></figcaption>
 </div>
 
+Examining samples within this cluster reveals three potential labeling issues, Figure 10 illustrates these labeling inconsistencies:
 
-Examining samples within this cluster reveals three potential labeling issues:
+- The books in the  dataset are **inconsistently labeled**—some are annotated while others are not, with no clear criteria.
 
-- The books in the  dataset are **inconsistently labeled—some are annotated while others are not**, with no clear criteria for inclusion.
-
-- Books are sometimes labeled as **individual** items and other times as **grouped** bounding boxes, creating ambiguity.
-
-- Bounding boxes for **rotated** books tend to be imprecise, often covering surrounding objects rather than the book itself. Figure 10 illustrates these labeling inconsistencies.
-
+- Books are sometimes labeled as **individual** items and other times as **grouped** items, creating ambiguity.
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure10.png" alt="Description"/>
@@ -127,30 +115,21 @@ Examining samples within this cluster reveals three potential labeling issues:
 </em></figcaption>
 </div>
 
+Figure 10 shows that in both samples, some books are annotated while others are not. Furthermore, the books are labeled inconsistently, with some identified as individual items and others grouped together. As a result, the model tends to **detect only some of the books**, and often picks different ones than the ground truth. The model also **struggles** to **distinguish** between individual books versus several books.
 
-As a result, the model tends to **detect only some of the books**, and often picks different ones than the ground truth. The model also struggles to distinguish between individual books versus several books.
-To investigate further, we explored the **sample analysis** provided by the platform, which offers a layered approach — from latent structure to visual inspection and **attention heatmaps** (Figure 11). The final layer of the model shows distinct focus points on four separate books on the top shelf, while the lower shelf displays a single, broad focus area, suggesting the model is treating the entire bookshelf as one object. Interestingly, when we are looking on previous layers’s heatmaps , we observed that layer number 45 correctly focuses on individual books on the lower shelf. This suggests that enhancing the influence of this layer on the final prediction could help mitigate the performance issues.
+To investigate further, we explored the **sample analysis** provided by the platform, which offers a way to compute gradcam-like heatmaps per layer (Figure 1). The final layer of the model (to the left) shows distinct focus points on four separate books on the top shelf, while the lower shelf displays a single, broad focus area. This suggests that the model treats the entire bookshelf as one object. Interestingly, when we are looking on a shallower layer’s heatmap (right) we observed that it correctly focuses on individual books on the lower shelf. This suggests that enhancing the influence of this layer on the final prediction could help mitigate the performance issues
 
+To support the hypothesis that inconsistent book labeling significantly affects cluster performance, we used the platform to generate a graph showing loss versus the number of books per sample (Figure 11). The results show a clear trend: as the number of **books** in each sample **increases, so does the loss** value.
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure11.png" alt="Description"/>
-  <figcaption><em>Figure 11- Right: Final layer: Focus on grouped books (bottom) and individual books (top), Left: Intermediate layer (Layer 45): Focus on individual books across shelves.
+  <figcaption><em>Figure 11 – Loss increases with number of books per sample
 </em></figcaption>
 </div>
-
-
-To support the hypothesis that inconsistent book labeling significantly impacts the cluster’s performance, using the platform, we generated a graph of loss versus the number of books per sample (Figure 12). The results show a clear trend: **as the number of books in each sample increases, so does the loss value**.
-
-
-<div align="center">
-  <img src="/ultralytics/tensorleap_folder/assets/Figure12.png" alt="Description"/>
-  <figcaption><em>Figure 12 – Loss increases with number of books per sample.
-</em></figcaption>
-</div>
-
 
 ---
 ## Wrapping Up
-This analysis showed how Tensorleap can uncover hidden patterns and problems in complex models like YOLOv11. By exploring latent space, metadata correlations, and model attention, we identified key performance issues such as overfitting, small object detection challenges, and labeling inconsistencies. These insights help guide targeted improvements, turning raw metrics into actionable understanding.
+This analysis showed how Tensorleap can uncover hidden patterns and problems in complex models and datasets like YOLOv11 and COCO. By exploring latent space, metadata correlations, and model attention, we identified key performance issues such as overfitting, small object detection challenges, and labeling inconsistencies. These insights help guide targeted improvements, turning raw metrics into actionable understanding.
+## Next Steps
 * Curious how you can benefit from Tensorleap? [Reach out for a demo](https://tensorleap.ai/request-demo/).
 * Want to explore this Tensorleap use-case yourself? [Check out our implementation](https://github.com/Tensorleap-hub/yolov11).
