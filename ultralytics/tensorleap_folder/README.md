@@ -125,12 +125,18 @@ Examining samples within this cluster reveals three potential labeling issues, F
 - Books are sometimes labeled as **individual** items and other times as **grouped** items, creating ambiguity.
 
 
-<div style="text-align: center; margin-bottom: 2em;">
-  <img src="/ultralytics/tensorleap_folder/assets/Figure10.png" alt="Figure 10" style="max-width: 100%; height: auto;" />
-  <p style="font-style: italic; margin-top: 0.5em;">
-    Figure 10 – Representative samples from the cluster. Top: ground truth, bottom: predictions.
-  </p>
-</div>
+<p align="center">
+  <img src="/ultralytics/tensorleap_folder/assets/Figure10.png" width="500"/>
+</p>
+
+<p align="center">
+  <em>Figure 10 – Representative samples from the cluster. Top: ground truth, bottom: predictions.</em>
+</p>
+
+&nbsp;
+
+
+
 
 
 Figure 10 shows that in both samples, some books are annotated while others are not. Furthermore, the books are labeled inconsistently, with some identified as individual items and others grouped together. As a result, the model tends to **detect only some of the books**, and often picks different ones than the ground truth. The model also **struggles** to **distinguish** between individual books versus several books.
