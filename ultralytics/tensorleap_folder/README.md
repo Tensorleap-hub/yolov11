@@ -4,11 +4,14 @@
   <img src="/ultralytics/tensorleap_folder/assets/Figure1.png" alt="Description"/>
   <figcaption><em>Figure 1 – Left: Final layer: Focus on grouped books (bottom) and individual books (top), Right: Shallow Layer: Focus on individual books across shelves.</em></figcaption>
 </div>
+&nbsp;
 
 ## Introduction
 This project builds on **Ultralytics** repository, utilizing [YOLOv11](https://docs.ultralytics.com/models/yolo11/) model for **object detection** on [COCO](https://cocodataset.org/#home) **dataset**, which contains 122,000 natural images across 80 object classes.
 Using Tensorleap, we analyze the model’s latent space, uncover hidden patterns, identify mislabeled samples, in order to **improve model performance** and dataset quality.
+
 ---
+
 ## Tensorleap Platform
 Tensorleap is a platform for **visualizing, interpreting, and explaining deep learning models**. It helps teams diagnose issues, optimize performance, and build more reliable AI models. Among its many features, we’ll focus on two that are particularly relevant to this blog post.
 ### Latent Space
@@ -22,6 +25,7 @@ Figure 2 colors the latent space based on the amount of “train” objects (lab
   <figcaption><em>Figure 2 – Latent space colored by amount of train objects in each sample. The bigger and redder the dot the more train objects appear in the image. Red rectangle marks the train-related cluster.
 </em></figcaption>
 </div>
+&nbsp;
 
 
  In Figure 3 we can see that these samples are clustered together in cluster 13, highlighting the model’s ability to organize semantically similar content.
@@ -56,6 +60,7 @@ Low-performance clusters.
   <figcaption><em>Figure 4 – Over representation insight, reveals a disproportionately high number of training samples compared to very few validation samples.
 </em></figcaption>
 </div>
+&nbsp;
 
 
 This insight reveals a disproportionately high number of training samples compared to very few validation samples, highlighting a **potential imbalance** in the data distribution. It also exhibits a **low bounding box** loss (which quantifies the error between predicted and ground truth object location) on the **training set**, and a **high bounding box loss** on the **validation set**. It suggests that the training samples contribute **limited new information**.
@@ -71,6 +76,7 @@ To validate this hypothesis, we visualized some of those samples (Figure 5). As 
   <figcaption><em>Figure 5- Visualization of representative samples from cluster 13. Upper row- ground truth, lower- predicted, right- validation set samples, left, train set samples.
 </em></figcaption>
 </div>
+&nbsp;
 
 
 As a result, the model performs poorly when it encounters validation samples that are a bit different, for example, images with higher overlap between objects than seen during training.
@@ -84,6 +90,7 @@ Based on the latent space, the platform extracted an additional insight as shown
   <figcaption><em>Figure 6- Small objects insight, along with the PCA derived PE, colored by median bounding box size (bluer and smaller dots represents smaller values).
 </em></figcaption>
 </div>
+&nbsp;
 
 
 An immediate hypothesis from this insight is that YOLOv11 **struggles** with **detecting small objects**. A quick review of samples from this cluster supports this idea as shown in figure 7. For example, the left column of figure 7 shows that the model manage to capture the large objects (persons, umbrella) but failed detecting the smaller ones (boats in the river). 
@@ -94,6 +101,7 @@ An immediate hypothesis from this insight is that YOLOv11 **struggles** with **d
   <figcaption><em>Figure 7- Representative cluster’s samples. Upper row- ground truth, lower row- predictions.
 </em></figcaption>
 </div>
+&nbsp;
 
 
 As a final validation, a line graph from the platform (Figure 8) confirms our assumption: As the median **bounding box area** in a sample **decreases**, the **loss increases**. This clear trend explains the poor performance observed in the two clusters and highlights the model’s difficulty in handling small objects.
@@ -104,6 +112,8 @@ As a final validation, a line graph from the platform (Figure 8) confirms our as
   <figcaption><em>Figure 8 – Loss as a function of median bounding box area.
 </em></figcaption>
 </div>
+&nbsp;
+
 
 
 Based on this analysis, our recommendation is to adjust the loss (which is constructed as a weighted sum of the bbox loss, class loss and focal loss) weights to place greater emphasis on focal loss to penalize small object errors more heavily.
@@ -116,6 +126,7 @@ Another low performance cluster, as shown in Figure 9 contains 8,826 samples wit
   <figcaption><em>Figure 9- Books insight, along with the tSNE derived PE, colored amount of books presence in a sample (bluer and smaller dots represents smaller number of books).
 </em></figcaption>
 </div>
+&nbsp;
 
 
 Examining samples within this cluster reveals three potential labeling issues, Figure 10 illustrates these labeling inconsistencies:
@@ -126,17 +137,13 @@ Examining samples within this cluster reveals three potential labeling issues, F
 
 
 <p align="center">
-  <img src="/ultralytics/tensorleap_folder/assets/Figure10.png" width="500"/>
+  <img src="/ultralytics/tensorleap_folder/assets/Figure10.png" />
 </p>
 
 <p align="center">
   <em>Figure 10 – Representative samples from the cluster. Top: ground truth, bottom: predictions.</em>
 </p>
-
 &nbsp;
-
-
-
 
 
 Figure 10 shows that in both samples, some books are annotated while others are not. Furthermore, the books are labeled inconsistently, with some identified as individual items and others grouped together. As a result, the model tends to **detect only some of the books**, and often picks different ones than the ground truth. The model also **struggles** to **distinguish** between individual books versus several books.
@@ -151,6 +158,8 @@ To support the hypothesis that inconsistent book labeling significantly affects 
   <figcaption><em>Figure 11 – Loss increases with number of books per sample
 </em></figcaption>
 </div>
+&nbsp;
+
 
 
 ---
