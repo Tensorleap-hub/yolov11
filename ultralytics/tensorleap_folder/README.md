@@ -111,7 +111,8 @@ Examining samples within this cluster reveals three potential labeling issues, F
 
 <div align="center">
   <img src="/ultralytics/tensorleap_folder/assets/Figure10.png" alt="Description"/>
-  <figcaption><em>Figure 10 – Representative samples from the cluster. Top- ground truth, bottom-predictions.
+  <figcaption><em>
+Figure 10 – Representative samples from the cluster. Top- ground truth, bottom-predictions.
 </em></figcaption>
 </div>
 
