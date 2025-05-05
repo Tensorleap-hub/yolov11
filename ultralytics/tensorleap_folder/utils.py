@@ -1,4 +1,8 @@
 import os
+import re
+import shutil
+from pathlib import Path
+
 import numpy as np
 import torch
 from code_loader.contract.datasetclasses import PreprocessResponse
@@ -26,3 +30,27 @@ def pred_post_process(y_pred, predictor, image, cfg):
     post_proc_pred[:, :4:2] /= image.shape[1]
     post_proc_pred[:, 1:4:2] /= image.shape[2]
     return post_proc_pred
+
+
+def extract_mapping(m_path):
+    def extract_yolo_variant(filename):
+        pattern = r'yolo(?:v)?\d+[a-zA-Z]'
+        match = re.search(pattern, filename)
+        if not match:
+            return False
+        else:
+            return f"{match.group()}"[:-1].replace('v','')
+
+    filename=Path(m_path).stem
+    model_type=extract_yolo_variant(filename)
+    root = Path.cwd()
+    mapping_folder_path =root / Path('ultralytics/tensorleap_folder/mapping')
+    source_file = mapping_folder_path / f'leap_mapping_{model_type}.yaml'
+
+    if not model_type or not os.path.exists(source_file):
+        print(f"No Mapping for {m_path} was found, put your mapping in the root directory.")
+    else:
+        destination_file = root/ 'leap_mapping.yaml'
+        shutil.copy(source_file, destination_file)
+        print(f"Extracting mapping for {model_type} completed")
+

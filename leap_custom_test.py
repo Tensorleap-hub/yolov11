@@ -9,6 +9,7 @@ import onnxruntime as ort
 import numpy as np
 from code_loader.helpers import visualize
 
+from ultralytics.tensorleap_folder.utils import extract_mapping
 
 
 def check_custom_test():
@@ -19,6 +20,7 @@ def check_custom_test():
     if not os.path.exists(m_path):
         from export_model_to_tf import start_export #TODO - currently supports only onnx
         m_path=start_export()
+        extract_mapping(m_path)
     keras_model=m_path.endswith(".h5")
     model = tf.keras.models.load_model(m_path) if keras_model else ort.InferenceSession(m_path)
 
