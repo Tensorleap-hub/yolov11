@@ -84,44 +84,21 @@ def metadata_per_img(idx: int, data: PreprocessResponse) -> Dict[str, Union[str,
     areas, aspect_ratios = bbox_area_and_aspect_ratio(bbox_gt, data.data['dataloader'][idx]['resized_shape'])
     occlusion_matrix, areas_in_pixels, union_in_pixels = calculate_iou_all_pairs(bbox_gt, data.data['dataloader'][idx][
         'resized_shape'])
-    num_pix_in_im = (
-                data.data['dataloader'][idx]['resized_shape'][0] * data.data['dataloader'][idx]['resized_shape'][1])
     no_nans_values = ~np.isnan(clss_info[0]).any()
-    x_center, y_center = bbox_gt[:, 0], bbox_gt[:, 1]
-
     d = {
         "image path": data.data['dataloader'].im_files[idx],
         "idx": idx,
         "# unique classes": len(clss_info[0]) if no_nans_values else nan_default_value,
         "# of objects": int(clss_info[1].sum()) if no_nans_values else nan_default_value,
-        "mean bbox x loc": float(x_center.mean()) if no_nans_values else nan_default_value,
-        "median bbox x loc": float(np.median(x_center)) if no_nans_values else nan_default_value,
-        "max bbox x loc": float(np.max(x_center)) if no_nans_values else nan_default_value,
-        "var bbox x loc": float(x_center.var()) if no_nans_values else nan_default_value,
-        "median bbox y loc": float(np.median(y_center)) if no_nans_values else nan_default_value,
-        "max bbox y loc": float(np.max(y_center)) if no_nans_values else nan_default_value,
-        "min bbox y loc": float(np.min(y_center)) if no_nans_values else nan_default_value,
-        "mean bbox y loc": float(y_center.mean()) if no_nans_values else nan_default_value,
-        "var bbox y loc": float(y_center.var()) if no_nans_values else nan_default_value,
         "mean bbox area": float(areas.mean()) if no_nans_values else nan_default_value,
         "var bbox area": float(areas.var()) if no_nans_values else nan_default_value,
         "median bbox area": float(np.median(areas)) if no_nans_values else nan_default_value,
         "max bbox area": float(np.max(areas)) if no_nans_values else nan_default_value,
         "min bbox area": float(np.min(areas)) if no_nans_values else nan_default_value,
-        "mean aspect ratio": float(aspect_ratios.mean()) if no_nans_values else nan_default_value,
-        "var aspect ratio": float(aspect_ratios.var()) if no_nans_values else nan_default_value,
-        "median aspect ratio": float(np.median(aspect_ratios)) if no_nans_values else nan_default_value,
-        "max aspect ratio": float(np.max(aspect_ratios)) if no_nans_values else nan_default_value,
-        "min aspect ratio": float(np.min(aspect_ratios)) if no_nans_values else nan_default_value,
-        "bbox occlusion": float(occlusion_matrix.sum() / num_pix_in_im) if no_nans_values else nan_default_value,
-        "max bbox occlusion": float(
-            occlusion_matrix.sum(axis=1).max() / num_pix_in_im) if no_nans_values else nan_default_value,
-        "bbox occlusion/union": float(
+        "bbox overlap": float(
             occlusion_matrix.sum() / areas_in_pixels.sum()) if no_nans_values else nan_default_value,
-        "max bbox occlusion/union": float(
+        "max bbox overlap": float(
             (occlusion_matrix.sum(axis=1) / areas_in_pixels).max()) if no_nans_values else nan_default_value,
-        'no info': float(1.0) if no_nans_values else 0.0,
-
     }
     d.update(**count_dict)
     return d

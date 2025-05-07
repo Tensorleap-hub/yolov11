@@ -37,8 +37,6 @@ def get_dataset_yaml(cfg):
     dataset_yaml_file=check_file(cfg.data)
     return  yaml_load(dataset_yaml_file, append_filename=True)
 
-# def get_labels_mapping(cfg):
-#     return yaml_load(os.path.join(os.path.pardir, "cfg", "datasets", cfg.data))['names']
 
 def get_predictor_obj(cfg,yolo_data):
     callbacks = callbacks_ult.get_default_callbacks()
