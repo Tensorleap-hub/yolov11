@@ -30,7 +30,72 @@ def pred_post_process(y_pred, predictor, image, cfg):
     post_proc_pred[:, :4:2] /= image.shape[1]
     post_proc_pred[:, 1:4:2] /= image.shape[2]
     return post_proc_pred
+def update_dict_count_cls(all_clss,clss_info):
+    if np.isnan(clss_info[0]).any():
+        return {f"count of '{v}' class ({k})": 0.0   for k, v in all_clss.items()}
+    return {f"count of '{v}' class ({k})": int(clss_info[1][clss_info[0]==k]) if k in clss_info[0] else 0.0  for k, v in all_clss.items()}
+def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='area',nan_default_value=-1.):
+    def get_mask(clss_info,k,info):
+        mask=clss_info[:, 0] == k
+        if info.ndim==2:
+            mask=mask[:,None]*mask[None,:]
+        return mask
 
+
+    if np.isnan(info).any():
+        return {f"{task}: {func_type} bbox of '{v}' class ({k})": nan_default_value   for k, v in all_clss.items()}
+    if func_type=='mean':
+        func=np.mean
+    elif func_type=='var':
+        func=np.var
+    elif func_type=='min':
+        func=np.min
+    elif func_type=='max':
+        func=np.max
+    elif func_type=='diff':
+        func = lambda x: np.max(x) - np.min(x)
+
+    return {f"{task}: {func_type} bbox of '{v}' class ({k})": float(func(info[get_mask(clss_info,k,info)])) if k in clss_info else 0. for k, v in all_clss.items()}
+
+
+
+def bbox_area_and_aspect_ratio(bboxes: np.ndarray, resized_shape):
+    widths = bboxes[:, 2]
+    heights = bboxes[:, 3]
+    areas = widths * heights
+    aspect_ratios = (heights*resized_shape[0]) / (widths*resized_shape[1])
+    return areas, aspect_ratios
+
+
+
+
+def calculate_iou_all_pairs(bboxes: np.ndarray, image_size: tuple):
+
+    areas_in_pixels = (bboxes[:,2]*image_size[0]* bboxes[:,3]*image_size[1]).astype(np.float32)
+
+    bboxes = np.asarray([xywh_to_xyxy_format(bbox[:-1]) for bbox in bboxes])
+    bboxes[:,::2] *= image_size[0]
+    bboxes[:,1::2] *= image_size[1]
+
+    num_bboxes = len(bboxes)
+    x_min = np.maximum(bboxes[:, 0][:, np.newaxis], bboxes[:, 0])
+    y_min = np.maximum(bboxes[:, 1][:, np.newaxis], bboxes[:, 1])
+    x_max = np.minimum(bboxes[:, 2][:, np.newaxis], bboxes[:, 2])
+    y_max = np.minimum(bboxes[:, 3][:, np.newaxis], bboxes[:, 3])
+    inter_w = np.clip(x_max - x_min, 0, None)
+    inter_h = np.clip(y_max - y_min, 0, None)
+    inter_area = inter_w * inter_h
+    np.fill_diagonal(inter_area, 0)
+    upper_tri_mask = np.triu(np.ones((num_bboxes, num_bboxes), dtype=bool), k=1)
+    occlusion_matrix = inter_area * upper_tri_mask
+    union_in_pixels= areas_in_pixels - np.sum(occlusion_matrix.T, axis=1)
+    return occlusion_matrix.astype(np.float32), areas_in_pixels.astype(np.float32), union_in_pixels.astype(np.float32)
+
+def xywh_to_xyxy_format(boxes):
+    min_xy = boxes[..., :2] - boxes[..., 2:] / 2
+    max_xy = boxes[..., :2] + boxes[..., 2:] / 2
+    result = np.concatenate([min_xy, max_xy], -1)
+    return result.astype(np.float32)
 
 def extract_mapping(m_path):
     def extract_yolo_variant(filename):

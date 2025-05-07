@@ -3,7 +3,7 @@ from code_loader.contract.datasetclasses import SamplePreprocessResponse
 from code_loader.contract.enums import DataStateType
 from leap_binder import (input_encoder, preprocess_func_leap, gt_encoder,
                          leap_binder, loss, gt_bb_decoder, image_visualizer, bb_decoder,
-                         misc_metadata, iou_dic, cost)
+                         iou_dic, cost, metadata_per_img)
 import tensorflow as tf
 import onnxruntime as ort
 import numpy as np
@@ -29,7 +29,7 @@ def check_custom_test():
             s_prepro=SamplePreprocessResponse(np.array(idx), subset)
             image = input_encoder(idx, subset)
             concat = np.expand_dims(image, axis=0)
-            meta_data=misc_metadata(idx, subset)
+            meta_data=metadata_per_img(idx, subset)
             y_pred = model([concat]) if keras_model else model.run(None, {model.get_inputs()[0].name: concat})
             if not keras_model:
                 y_pred=[tf.convert_to_tensor(p)  for p in y_pred]
@@ -46,7 +46,6 @@ def check_custom_test():
                 visualize(pred_img)
                 if subset.state != DataStateType.unlabeled:
                     visualize(gt_img)
-
     print("finish tests")
 
 
