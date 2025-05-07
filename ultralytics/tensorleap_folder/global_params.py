@@ -29,8 +29,8 @@ def get_criterion(model_path,cfg):
     criterion = model_base.init_criterion()
     criterion.hyp = IterableSimpleNamespace(**criterion.hyp)
     criterion.hyp.box = cfg.box
-    criterion.hyp.cls = cfg.box
-    criterion.hyp.dfl = cfg.box
+    criterion.hyp.cls = cfg.cls
+    criterion.hyp.dfl = cfg.dfl
 
     return criterion
 def get_dataset_yaml(cfg):

@@ -21,23 +21,6 @@ def dict_to_namespace(d):
         return [dict_to_namespace(i) for i in d]
     else:
         return d
-def export_to_h5(onnx_path):
-    from onnx2keras import onnx_to_keras
-    from onnx2keras import convert_channels_first_to_last
-    from keras_data_format_converter.converterapi import convert_channels_first_to_last
-
-    import onnx
-
-    onnx_model = onnx.load(onnx_path)
-    input_all = [_input.name for _input in onnx_model.graph.input]
-    input_initializer = [node.name for node in onnx_model.graph.initializer]
-    input_names = list(set(input_all) - set(input_initializer))
-
-    k_model = onnx_to_keras(onnx_model, input_names, name_policy='attach_weights_name', allow_partial_compilation=False)
-    flipped_model = convert_channels_first_to_last(k_model.converted_model, should_transform_inputs_and_outputs=False)
-    flipped_model.save(Path(onnx_path).with_suffix('.h5'))
-    print(f"Model exported to h5: {Path(onnx_path).with_suffix('.h5')}")
-
 
 def export_to_onnx(cfg):
     model = YOLO(cfg.model if hasattr(cfg, "model") else "yolo11s.pt")
@@ -57,9 +40,6 @@ def start_export(h5=False):
     cfg.model=model_path
     export_to_onnx(cfg)
     exported_model_path=yolo_version_check(model_path)
-    if exported_model_path.exists() and h5:
-        export_to_h5(exported_model_path)
-
     print(f"Model exported to ONNX: {exported_model_path}")
     return str(exported_model_path)
 if __name__ == '__main__':
