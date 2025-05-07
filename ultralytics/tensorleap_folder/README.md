@@ -36,7 +36,7 @@ Use this for the simplest setup with the default YOLOv11s model and the COCO128 
 
 ## 🧠 2. Using Other Pretrained YOLO Models
 
-To use other YOLO variants from the Ultralytics suite:
+To use other YOLO variants from the [Ultralytics suite](https://docs.ultralytics.com/models/):
 
 ### Steps:
 
