@@ -1,6 +1,6 @@
 
 
-# 🚀 Object Detection Using YOLOv11 — Step-by-Step Guide
+# 🚀 Object Detection Using YOLO — Step-by-Step Guide
 
 This guide walks you through integrating YOLO models with Tensorleap for object detection, covering simple usage, pretrained alternatives, and custom-trained models.
 
