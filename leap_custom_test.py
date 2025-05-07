@@ -8,7 +8,6 @@ import tensorflow as tf
 import onnxruntime as ort
 import numpy as np
 from code_loader.helpers import visualize
-
 from ultralytics.tensorleap_folder.utils import extract_mapping
 
 def check_custom_test():
@@ -22,7 +21,6 @@ def check_custom_test():
         extract_mapping(m_path)
     keras_model=m_path.endswith(".h5")
     model = tf.keras.models.load_model(m_path) if keras_model else ort.InferenceSession(m_path)
-
     responses = preprocess_func_leap()
     for subset in responses:
         for idx in range(20):
@@ -52,7 +50,7 @@ def check_custom_test():
 if __name__ == '__main__':
     check_generic = True
     plot_vis= True
-    model_path =  None #r'/Users/yamtawachi/tensorleap/datasets/models/yolo11s.h5' # Choose None if only pt version available or your  h5/onnx model's path.
+    model_path =  r'/Users/yamtawachi/tensorleap/datasets/models/yolo11s.h5' # Choose None if only pt version available else, use your h5/onnx model's path.
 
 
     check_custom_test()
