@@ -11,7 +11,6 @@ from code_loader.helpers import visualize
 
 from ultralytics.tensorleap_folder.utils import extract_mapping
 
-
 def check_custom_test():
     if check_generic:
         leap_binder.check()

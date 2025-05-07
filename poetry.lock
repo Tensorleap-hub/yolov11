@@ -3542,6 +3542,21 @@ protobuf = ">=3.20.2"
 reference = ["Pillow", "google-re2"]
 
 [[package]]
+name = "onnx2keras"
+version = "0.0.24"
+description = "The deep learning models converter"
+optional = false
+python-versions = "*"
+files = [
+    {file = "onnx2keras-0.0.24.tar.gz", hash = "sha256:f522f72cc31f9aff840db148ddc72b25959de89ce3c3cc7358a02789dcce016a"},
+]
+
+[package.dependencies]
+numpy = "*"
+onnx = "*"
+tensorflow = "*"
+
+[[package]]
 name = "opencv-python"
 version = "4.11.0.86"
 description = "Wrapper package for OpenCV python bindings."
@@ -6855,4 +6870,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "5d61c884ad6e81eaa76edb3744168c26a7e4cdbe078c2c68bcb99777f5675078"
+content-hash = "8939687aea31770a7e0d0060fe8b586368ec3d8686742cc8b1256dd50276b644"
