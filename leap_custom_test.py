@@ -16,7 +16,7 @@ def check_custom_test():
     if check_generic:
         leap_binder.check()
     print("started custom tests")
-    model_path = r"yolov11sb.h5"
+    model_path = r"yolov11s.h5"
     model = tf.keras.models.load_model(model_path)
     responses = preprocess_func_leap()
     for subset in responses:
