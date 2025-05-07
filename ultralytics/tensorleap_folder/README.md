@@ -131,11 +131,9 @@ If you’ve trained your own model and/or have custom datasets:
 ---
 
 ## ✅ Summary
-
-| Scenario                | Configuration Needed | Model Conversion       | Push to Tensorleap                 |
-| ----------------------- | -------------------- | ---------------------- | ---------------------------------- |
-| Base YOLOv11s + COCO128 | Minimal              | None                   | `leap projects push yolov11s.onnx` |
-| Other Pretrained YOLOs  | Model + Path Edit    | `leap_custom_test.py`  | `leap projects push <onnx>`        |
-| Custom Trained YOLO     | Model + Dataset Edit | A: script or B: manual | `leap projects push <onnx>`        |
-
-
+| **Use Case**                | **Required Setup**                                     | **Preparation Step**      | **Supported Model Format(s)** |
+| --------------------------- |--------------------------------------------------------| ------------------------- | ----------------------------- |
+| **Base YOLOv11s + COCO128** | None                                                   | None                      | `onnx`                        |
+| **Other Pretrained YOLOs**  | Specify model name in config (`default.yaml`)          | Run `leap_custom_test.py` | `onnx`                        |
+| **Custom YOLO (Option A)**  | Place `.pt` model and edit dataset settings            | Run `leap_custom_test.py` | `onnx`                        |
+| **Custom YOLO (Option B)**  | Provide `.onnx` or `.h5` model manually + find mapping | None                      | `onnx`, `h5`                  |
