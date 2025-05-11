@@ -4,6 +4,8 @@
 
 This guide walks you through integrating YOLO models with Tensorleap for object detection, covering simple usage, pretrained alternatives, and custom-trained models.
 
+First time users, follow [For First-Time Users: Configure Your Project](#for-first-time-users-configure-your-project) to configure your project's settings and environment first.
+
 ---
 
 ## 🔰 1. Base Case: YOLOv11s with COCO128
@@ -34,7 +36,7 @@ Use this for the simplest setup with the default YOLOv11s model and the COCO128 
 
 ---
 
-## 🧠 2. Using Other Pretrained YOLO Models
+## 🧠 Case 2. Using Other Pretrained YOLO Models
 
 To use other YOLO variants from the [Ultralytics suite](https://docs.ultralytics.com/models/):
 
@@ -75,7 +77,7 @@ To use other YOLO variants from the [Ultralytics suite](https://docs.ultralytics
 
 ---
 
-## 🧪 3. Using Your Own Trained YOLO Model
+## 🧪 Case 3. Using Your Own Trained YOLO Model
 
 If you’ve trained your own model and/or have custom datasets:
 
@@ -137,3 +139,27 @@ If you’ve trained your own model and/or have custom datasets:
 | **Other Pretrained YOLOs**  | Specify model name in config (`default.yaml`)          | Run `leap_custom_test.py` | `onnx`                        |
 | **Custom YOLO (Option A)**  | Place `.pt` model and edit dataset settings            | Run `leap_custom_test.py` | `onnx`                        |
 | **Custom YOLO (Option B)**  | Provide `.onnx` or `.h5` model manually + find mapping | None                      | `onnx`, `h5`                  |
+
+
+
+--- 
+## For First-Time Users: Configure Your Project
+
+Before running the project, make sure to configure it properly. Follow these steps:
+
+1. **Tensorleap Settings**  
+   On your local Tensorleap platform:
+   - Open the menu (☰ hamburger icon) and go to **Settings**.
+   - Ensure the **Build Dynamic Dependencies** toggle is switched **on**.
+
+   ![Build Dynamic Dependencies](assets/pipin_button.png)
+
+2. **Generate a New CLI Token**  
+   - From the same menu (☰ hamburger icon), select **CLI Token**.
+   - Generate a new token and **copy it** to use later in the CLI.
+
+   ![Generate CLI Token](assets/token_button.png)
+
+If you intend to use Cases 2/3b follow the next steps to configure your local poetry env.
+
+
