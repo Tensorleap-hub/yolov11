@@ -18,7 +18,7 @@ def check_custom_test():
     if not os.path.exists(m_path):
         from export_model_to_tf import start_export #TODO - currently supports only onnx
         m_path=start_export()
-        extract_mapping(m_path)
+        extract_mapping(m_path,mapping_version)
     keras_model=m_path.endswith(".h5")
     model = tf.keras.models.load_model(m_path) if keras_model else ort.InferenceSession(m_path)
     responses = preprocess_func_leap()
@@ -50,7 +50,6 @@ def check_custom_test():
 if __name__ == '__main__':
     check_generic = True
     plot_vis= True
-    model_path =  r'/Users/yamtawachi/tensorleap/datasets/models/yolo11s.h5' # Choose None if only pt version available else, use your h5/onnx model's path.
-
-
+    model_path = None  # Choose None if only pt version available else, use your h5/onnx model's path.
+    mapping_version = None # Choose None model's name is supported by ultralytics. Else, use the base yolo architecture name (e.x yolov11s) .
     check_custom_test()

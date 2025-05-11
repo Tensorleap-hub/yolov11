@@ -97,7 +97,7 @@ def xywh_to_xyxy_format(boxes):
     result = np.concatenate([min_xy, max_xy], -1)
     return result.astype(np.float32)
 
-def extract_mapping(m_path):
+def extract_mapping(m_path,mapping_version):
     def extract_yolo_variant(filename):
         pattern = r'yolo(?:v)?\d+[a-zA-Z]'
         match = re.search(pattern, filename)
@@ -106,7 +106,7 @@ def extract_mapping(m_path):
         else:
             return f"{match.group()}"[:-1].replace('v','')
 
-    filename=Path(m_path).stem
+    filename=Path(m_path).stem if mapping_version==None else mapping_version
     model_type=extract_yolo_variant(filename)
     root = Path.cwd()
     mapping_folder_path =root / Path('ultralytics/tensorleap_folder/mapping')
