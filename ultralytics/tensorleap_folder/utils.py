@@ -30,17 +30,18 @@ def pred_post_process(y_pred, predictor, image, cfg):
     post_proc_pred[:, :4:2] /= image.shape[1]
     post_proc_pred[:, 1:4:2] /= image.shape[2]
     return post_proc_pred
-def update_dict_count_cls(all_clss,clss_info):
+
+def update_dict_count_cls(all_clss,clss_info,nan_default_value):
     if np.isnan(clss_info[0]).any():
-        return {f"count of '{v}' class ({k})": 0.0   for k, v in all_clss.items()}
-    return {f"count of '{v}' class ({k})": int(clss_info[1][clss_info[0]==k]) if k in clss_info[0] else 0.0  for k, v in all_clss.items()}
-def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='area',nan_default_value=-1.):
+        return {f"count of '{v}' class ({k})": nan_default_value   for k, v in all_clss.items()}
+    return {f"count of '{v}' class ({k})": int(clss_info[1][clss_info[0]==k]) if k in clss_info[0] else nan_default_value for k, v in all_clss.items()}
+
+def update_dict_bbox_cls_info(all_clss,info,clss_info,func_type='mean',task='area',nan_default_value=None):
     def get_mask(clss_info,k,info):
         mask=clss_info[:, 0] == k
         if info.ndim==2:
             mask=mask[:,None]*mask[None,:]
         return mask
-
 
     if np.isnan(info).any():
         return {f"{task}: {func_type} bbox of '{v}' class ({k})": nan_default_value   for k, v in all_clss.items()}

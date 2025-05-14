@@ -4,6 +4,9 @@ import os
 import numpy as np
 import yaml
 from types import SimpleNamespace
+
+from code_loader.contract.enums import DatasetMetadataType
+
 from ultralytics.utils import callbacks as callbacks_ult
 from ultralytics.models.yolo.detect import DetectionValidator
 from ultralytics.utils import yaml_load
@@ -71,3 +74,4 @@ all_clss=dataset_yaml["names"]
 cls_mapping = {v: k for k, v in all_clss.items()}
 wanted_cls_dic=get_wanted_cls(cls_mapping,cfg)
 predictor=get_predictor_obj(cfg,yolo_data)
+possible_float_like_nan_types={f"count of '{v}' class ({k})": DatasetMetadataType.float   for k, v in all_clss.items()}

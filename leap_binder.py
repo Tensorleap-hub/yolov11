@@ -1,13 +1,14 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss, tensorleap_custom_metric
-from ultralytics.tensorleap_folder.global_params import cfg, yolo_data, criterion, all_clss,cls_mapping,wanted_cls_dic, predictor
+from ultralytics.tensorleap_folder.global_params import cfg, yolo_data, criterion, all_clss,possible_float_like_nan_types,wanted_cls_dic, predictor
 from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader, \
     update_dict_count_cls, bbox_area_and_aspect_ratio, calculate_iou_all_pairs
 from typing import List, Dict, Union
 import numpy as np
 from code_loader import leap_binder
-from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType, SamplePreprocessResponse
-from code_loader.contract.enums import LeapDataType, MetricDirection
+from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType, SamplePreprocessResponse, \
+    ConfusionMatrixElement
+from code_loader.contract.enums import LeapDataType, MetricDirection, DatasetMetadataType
 from code_loader.visualizers.default_visualizers import LeapImage
 from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_preprocess, tensorleap_gt_encoder,
                                                                  tensorleap_input_encoder, tensorleap_metadata,
@@ -72,14 +73,14 @@ def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
     return idx
 
 
-@tensorleap_metadata("image info a")
+@tensorleap_metadata("image info a", metadata_type = possible_float_like_nan_types)
 def metadata_per_img(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int, float]]:
-    nan_default_value = -1.
+    nan_default_value = None
     gt_data = gt_encoder(idx, data)
     cls_gt = np.expand_dims(gt_data[:, 4], axis=1)
     bbox_gt = gt_data[:, :4]
     clss_info = np.unique(cls_gt, return_counts=True)
-    count_dict = update_dict_count_cls(all_clss, clss_info)
+    count_dict = update_dict_count_cls(all_clss, clss_info,nan_default_value)
     areas, aspect_ratios = bbox_area_and_aspect_ratio(bbox_gt, data.data['dataloader'][idx]['resized_shape'])
     occlusion_matrix, areas_in_pixels, union_in_pixels = calculate_iou_all_pairs(bbox_gt, data.data['dataloader'][idx][
         'resized_shape'])
@@ -186,6 +187,7 @@ def ious(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str
     wanted_cell_in_tr=np.isin(pbatch['cls'].numpy(),np.array(list(wanted_cls_dic.values())))
     cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
     predn = predictor._prepare_pred(pred, pbatch)
+
     iou_mat = box_iou(bbox, predn[:, :4])
     iou_spec_cls_mat=iou_mat[wanted_cell_in_tr]
     iou_dic  = dict.fromkeys(wanted_cls_dic.keys(), default_value)
@@ -212,9 +214,28 @@ def cost(pred80,pred40,pred20,gt):
 
 
 @tensorleap_custom_metric('Confusion Matrix')
-def confusion_matrix_metric(pred_boxes: np.ndarray, pred_scores: np.ndarray, targets: np.ndarray):
-    conf_mat=ConfusionMatrix(nc=len(all_clss), conf=0.25, iou_thres=0.45, task="detect")
+def confusion_matrix_metric(y_pred , preprocess):
+    # default_value=np.ones(1)*-1
+    batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
+    batch["imgsz"]=(batch["resized_shape"],)
+    batch["ori_shape"]=(batch["ori_shape"],)
+    batch["ratio_pad"]= (batch["ratio_pad"],)
+    batch["img"]=batch["img"].unsqueeze(0)
+    pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
+    predictor.seen=0
+    predictor.args.plots=False
+    predictor.stats={}
+    predictor.stats['tp']=[]
+    pbatch = predictor._prepare_batch(0, batch)
+    # wanted_cell_in_tr=np.isin(pbatch['cls'].numpy(),np.array(list(wanted_cls_dic.values())))
+    cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
+    predn = predictor._prepare_pred(pred, pbatch)
 
+    conf_mat_obj = ConfusionMatrix(nc=len(all_clss), conf=0.25, iou_thres=0.45, task="detect")
+    predictor.confusion_matrix=conf_mat_obj
+    predictor.confusion_matrix.process_batch(predn, bbox, cls)
+    conf_mat=predictor.confusion_matrix.matrix
+    return [0.5]
 
 
 # ---------------------------------------------------------main------------------------------------------------------

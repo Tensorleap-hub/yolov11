@@ -803,13 +803,13 @@ testing = ["pytest (>=7.2.1)", "pytest-cov (>=4.0.0)", "tox (>=4.4.3)"]
 
 [[package]]
 name = "code-loader"
-version = "1.0.76"
+version = "1.0.83"
 description = ""
 optional = false
 python-versions = "<3.12,>=3.8"
 files = [
-    {file = "code_loader-1.0.76-py3-none-any.whl", hash = "sha256:0c922455e962928aaddc6b10d2cf2f55aeba3a0c8483f53b3273ca45ccfa9816"},
-    {file = "code_loader-1.0.76.tar.gz", hash = "sha256:6da9e2fc49191a3e85816b89706edf316e7b2179baefd12a3634a02bb2273d93"},
+    {file = "code_loader-1.0.83-py3-none-any.whl", hash = "sha256:34e86356e613942551b782f7ca9a1d286462b31c01f6230918d306a10717841a"},
+    {file = "code_loader-1.0.83.tar.gz", hash = "sha256:2402fb0b3a7049c4e7231d6504e85a12d15804a96374add6d0969188c7ce0689"},
 ]
 
 [package.dependencies]
