@@ -1,5 +1,7 @@
 from pathlib import Path
 import os
+
+import numpy as np
 import yaml
 from types import SimpleNamespace
 from ultralytics.utils import callbacks as callbacks_ult
@@ -44,6 +46,17 @@ def get_predictor_obj(cfg,yolo_data):
     predictor.data = yolo_data
     predictor.end2end = False
     return predictor
+def get_wanted_cls(cls_mapping,cfg):
+    wanted_cls = cfg.wanted_cls
+    supported_cls=np.isin(wanted_cls,list(cls_mapping.keys()))
+    if not supported_cls.all():
+        print(f"{list(np.array(wanted_cls)[~supported_cls])} objects are not supported and will not be shown in calculations.")
+    wanted_cls =  np.array(wanted_cls)[supported_cls]
+    if wanted_cls is None or len(wanted_cls)==0:
+        wanted_cls = np.array(list(cls_mapping.keys())[:10])
+        print(f"No wanted classes found, use the default top 10: {wanted_cls}")
+    wanted_cls_dic = {k: cls_mapping[k] for k in wanted_cls}
+    return wanted_cls_dic
 
 root = Path(__file__).resolve().parent.parent
 file_path = os.path.join(root, 'cfg/default.yaml')
@@ -55,4 +68,6 @@ yolo_data=get_yolo_data(cfg)
 dataset_yaml=get_dataset_yaml(cfg)
 criterion=get_criterion(Path(cfg.model),cfg)
 all_clss=dataset_yaml["names"]
+cls_mapping = {v: k for k, v in all_clss.items()}
+wanted_cls_dic=get_wanted_cls(cls_mapping,cfg)
 predictor=get_predictor_obj(cfg,yolo_data)
