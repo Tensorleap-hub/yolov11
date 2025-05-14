@@ -20,7 +20,7 @@ Use this for the simplest setup with the default YOLOv11s model and the COCO128 
    * Set the following:
 
      ```yaml
-     tensorleap_path: <path_where_tensorleap_is_mounted>
+     tensorleap_path: <path_where_tensorleap_is_mounted> 
      ```
 
      This defines where the data and model files will be stored.
@@ -28,7 +28,7 @@ Use this for the simplest setup with the default YOLOv11s model and the COCO128 
 2. **Push Model to Tensorleap**
 
    ```bash
-   leap projects push yolov11s.onnx
+   leap projects push yolo11s.onnx
    ```
 
    * Downloads necessary files (model/data)
@@ -38,7 +38,7 @@ Use this for the simplest setup with the default YOLOv11s model and the COCO128 
 
 ## 🧠 Case 2: Using Other Pretrained YOLO Models
 
-To use other YOLO variants from the [Ultralytics suite](https://docs.ultralytics.com/models/):
+To use other pretrained YOLO variants from the [Ultralytics suite](https://docs.ultralytics.com/models/) without the need to have the model locally (it will be downloaded automatically from ultralytics github), follow these steps
 
 ### Steps:
 
@@ -49,7 +49,7 @@ To use other YOLO variants from the [Ultralytics suite](https://docs.ultralytics
 
      ```yaml
      tensorleap_path: <your_tensorleap_mount_path>
-     model: models/<desired_model_name>
+     model: models/<desired_model_name>.pt
      ```
 
      > ⚠️ Supported: All sizes of YOLOv5, YOLOv8, YOLOv9, YOLOv11, YOLOv12.
@@ -59,15 +59,17 @@ To use other YOLO variants from the [Ultralytics suite](https://docs.ultralytics
    ```bash
    python leap_custom_test.py
    ```
+   (No changes are needed to the main guard block's parameters)   
 
-   This will:
+This will:
+
 
    * Convert `.pt` to `.onnx`
    * Print the ONNX path (used in Step 3)
    * Generate `leap_mapping.yaml` file
    * Run a local sanity test on 10 samples
    * **Download the coco dataset** to <your_tensorleap_mount_path> if not present in this path. 
-
+   
 3. **Push to Tensorleap**
 
    ```bash
@@ -91,7 +93,7 @@ If you’ve trained your own model and/or have custom datasets:
 
      ```yaml
      tensorleap_path: <your_tensorleap_mount_path>
-     model: models/<your_model_name>
+     model: models/<your_model_name>.pt
      ```
    * Place your `.pt` model in `<tensorleap_path>/models/`.
    * (Optional) Enable extra dataset support:

@@ -1,5 +1,5 @@
-codeIntegrationId:
-projectId:
+codeIntegrationId: 6824bb224ba2520fb896eee8
+projectId: 6821c06d4ba2520fb896ee9f
 secretId: ""
 branch: master
 entryFile: leap_binder.py

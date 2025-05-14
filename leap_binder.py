@@ -6,9 +6,8 @@ from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_proces
 from typing import List, Dict, Union
 import numpy as np
 from code_loader import leap_binder
-from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType, SamplePreprocessResponse, \
-    ConfusionMatrixElement
-from code_loader.contract.enums import LeapDataType, MetricDirection, DatasetMetadataType
+from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType, SamplePreprocessResponse
+from code_loader.contract.enums import LeapDataType, MetricDirection
 from code_loader.visualizers.default_visualizers import LeapImage
 from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_preprocess, tensorleap_gt_encoder,
                                                                  tensorleap_input_encoder, tensorleap_metadata,
@@ -17,7 +16,7 @@ from code_loader.contract.responsedataclasses import BoundingBox
 from code_loader.contract.visualizer_classes import LeapImageWithBBox
 from code_loader.utils import rescale_min_max
 from ultralytics.utils.plotting import output_to_target
-from ultralytics.utils.metrics import box_iou, ConfusionMatrix
+from ultralytics.utils.metrics import box_iou
 
 
 # ----------------------------------------------------data processing---------------------------------------------------
@@ -147,30 +146,7 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
 
-
-# ---------------------------------------------------------metrics------------------------------------------------------
 @tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
-def iou_dic(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
-    batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
-    batch["imgsz"]=(batch["resized_shape"],)
-    batch["ori_shape"]=(batch["ori_shape"],)
-    batch["ratio_pad"]= (batch["ratio_pad"],)
-    batch["img"]=batch["img"].unsqueeze(0)
-    pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
-    predictor.seen=0
-    predictor.args.plots=False
-    predictor.stats={}
-    predictor.stats['tp']=[]
-    pbatch = predictor._prepare_batch(0, batch)
-    cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
-    predn = predictor._prepare_pred(pred, pbatch)
-    iou_mat = box_iou(bbox, predn[:, :4])
-    if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
-        return np.zeros(1)
-    mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
-    return np.expand_dims(mean_iou_per_image.mean(),axis=0)
-
-@tensorleap_custom_metric("selected class ious", direction=MetricDirection.Upward)
 def ious(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
     default_value=np.ones(1)*-1
     batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
@@ -187,17 +163,16 @@ def ious(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str
     wanted_cell_in_tr=np.isin(pbatch['cls'].numpy(),np.array(list(wanted_cls_dic.values())))
     cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
     predn = predictor._prepare_pred(pred, pbatch)
-
-    iou_mat = box_iou(bbox, predn[:, :4])
+    iou_mat = box_iou(bbox, predn[:, :4]).numpy()
     iou_spec_cls_mat=iou_mat[wanted_cell_in_tr]
     iou_dic  = dict.fromkeys(wanted_cls_dic.keys(), default_value)
-    mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
-    if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
+    mean_iou_per_image =  (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdims=True))).max(axis=1)
+    if iou_mat.size == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
         iou_dic['mean sample iou'] = np.expand_dims(default_value, axis=0)
-    mean_iou_spec_cls =   (iou_spec_cls_mat*(iou_spec_cls_mat==iou_spec_cls_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy() if len(iou_spec_cls_mat)!=0 else []
+    mean_iou_spec_cls =  (iou_spec_cls_mat*(iou_spec_cls_mat==iou_spec_cls_mat.max(axis=0, keepdims=True))).max(axis=1) if len(iou_spec_cls_mat)!=0 else []
     for c in np.unique(cls[wanted_cell_in_tr]):
         iou_dic[all_clss[c]] = np.expand_dims(mean_iou_spec_cls[cls.numpy()[wanted_cell_in_tr] == c].mean(),axis=0)
-    iou_dic['mean sample iou']=np.expand_dims(mean_iou_per_image.mean(),axis=0)
+    iou_dic['mean sample iou'] = np.expand_dims(mean_iou_per_image.mean(),axis=0)
     return iou_dic
 
 
@@ -211,32 +186,6 @@ def cost(pred80,pred40,pred20,gt):
     y_pred_torch = [torch.from_numpy(s) for s in [pred80,pred40,pred20]]
     _,loss_parts= criterion(y_pred_torch, d)
     return {"box":loss_parts[0].unsqueeze(0).numpy(),"cls":loss_parts[1].unsqueeze(0).numpy(),"dfl":loss_parts[2].unsqueeze(0).numpy()}
-
-
-@tensorleap_custom_metric('Confusion Matrix')
-def confusion_matrix_metric(y_pred , preprocess):
-    # default_value=np.ones(1)*-1
-    batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
-    batch["imgsz"]=(batch["resized_shape"],)
-    batch["ori_shape"]=(batch["ori_shape"],)
-    batch["ratio_pad"]= (batch["ratio_pad"],)
-    batch["img"]=batch["img"].unsqueeze(0)
-    pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
-    predictor.seen=0
-    predictor.args.plots=False
-    predictor.stats={}
-    predictor.stats['tp']=[]
-    pbatch = predictor._prepare_batch(0, batch)
-    # wanted_cell_in_tr=np.isin(pbatch['cls'].numpy(),np.array(list(wanted_cls_dic.values())))
-    cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
-    predn = predictor._prepare_pred(pred, pbatch)
-
-    conf_mat_obj = ConfusionMatrix(nc=len(all_clss), conf=0.25, iou_thres=0.45, task="detect")
-    predictor.confusion_matrix=conf_mat_obj
-    predictor.confusion_matrix.process_batch(predn, bbox, cls)
-    conf_mat=predictor.confusion_matrix.matrix
-    return [0.5]
-
 
 # ---------------------------------------------------------main------------------------------------------------------
 
