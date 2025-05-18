@@ -6,8 +6,9 @@ from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_proces
 from typing import List, Dict, Union
 import numpy as np
 from code_loader import leap_binder
-from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType, SamplePreprocessResponse
-from code_loader.contract.enums import LeapDataType, MetricDirection
+from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType, SamplePreprocessResponse, \
+    ConfusionMatrixElement
+from code_loader.contract.enums import LeapDataType, MetricDirection, ConfusionMatrixValue
 from code_loader.visualizers.default_visualizers import LeapImage
 from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_preprocess, tensorleap_gt_encoder,
                                                                  tensorleap_input_encoder, tensorleap_metadata,
@@ -187,6 +188,66 @@ def cost(pred80,pred40,pred20,gt):
     _,loss_parts= criterion(y_pred_torch, d)
     return {"box":loss_parts[0].unsqueeze(0).numpy(),"cls":loss_parts[1].unsqueeze(0).numpy(),"dfl":loss_parts[2].unsqueeze(0).numpy()}
 
+
+@tensorleap_custom_metric('Confusion Matrix')
+def confusion_matrix_metric(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
+    threshold=cfg.iou
+    confusion_matrix_elements = []
+    batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
+    batch["imgsz"]=(batch["resized_shape"],)
+    batch["ori_shape"]=(batch["ori_shape"],)
+    batch["ratio_pad"]= (batch["ratio_pad"],)
+    batch["img"]=batch["img"].unsqueeze(0)
+    pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
+    predictor.seen=0
+    predictor.args.plots=False
+    predictor.stats={}
+    predictor.stats['tp']=[]
+    pbatch = predictor._prepare_batch(0, batch)
+    cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
+    predn = predictor._prepare_pred(pred, pbatch)
+    if len(predn)!=0:
+        ious = box_iou(bbox, predn[:, :4]).numpy().T
+        prediction_detected = np.any((ious > threshold), axis=1)
+        max_iou_ind = np.argmax(ious, axis=1)
+        for i, prediction in enumerate(prediction_detected):
+            gt_idx = int(batch['cls'][max_iou_ind[i]])
+            class_name = all_clss.get(gt_idx)
+            gt_label = f"{class_name}"
+            confidence = predn[i, 4]
+            if prediction:  # TP
+                confusion_matrix_elements.append(ConfusionMatrixElement(
+                    str(gt_label),
+                    ConfusionMatrixValue.Positive,
+                    float(confidence)
+                ))
+            else:  # FP
+                class_name = all_clss.get(int(predn[i,5]))
+                pred_label = f"{class_name}"
+                confusion_matrix_elements.append(ConfusionMatrixElement(
+                    str(pred_label),
+                    ConfusionMatrixValue.Negative,
+                    float(confidence)
+                ))
+    else:  # No prediction
+        ious = np.zeros((1, cls.shape[0]))
+    gts_detected = np.any((ious > threshold), axis=0)
+    for k, gt_detection in enumerate(gts_detected):
+        label_idx = cls[k]
+        if not gt_detection : # FN
+            class_name = all_clss.get(int(label_idx))
+            confusion_matrix_elements.append(ConfusionMatrixElement(
+                f"{class_name}",
+                ConfusionMatrixValue.Positive,
+                float(0)
+            ))
+    if all(~ gts_detected):
+        confusion_matrix_elements.append(ConfusionMatrixElement(
+            "background",
+            ConfusionMatrixValue.Positive,
+            float(0)
+        ))
+    return [confusion_matrix_elements]
 # ---------------------------------------------------------main------------------------------------------------------
 
 

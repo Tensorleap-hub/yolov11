@@ -3,7 +3,7 @@ from code_loader.contract.datasetclasses import SamplePreprocessResponse
 from code_loader.contract.enums import DataStateType
 from leap_binder import (input_encoder, preprocess_func_leap, gt_encoder,
                          leap_binder, loss, gt_bb_decoder, image_visualizer, bb_decoder,
-                         cost, metadata_per_img, ious)
+                         cost, metadata_per_img, ious, confusion_matrix_metric)
 import tensorflow as tf
 import onnxruntime as ort
 import numpy as np
@@ -40,6 +40,7 @@ def check_custom_test():
                 total_loss=loss(y_pred[1].numpy(),y_pred[2].numpy(),y_pred[3].numpy(),np.expand_dims(gt,axis=0), y_pred[0].numpy())
                 cost_dic=cost(y_pred[1].numpy(),y_pred[2].numpy(),y_pred[3].numpy(),np.expand_dims(gt,axis=0))
                 iou=ious(y_pred[0].numpy(), s_prepro)
+                conf_mat = confusion_matrix_metric(y_pred[0].numpy(), s_prepro)
             # metadata
             meta_data=metadata_per_img(idx, subset)
             # vis
