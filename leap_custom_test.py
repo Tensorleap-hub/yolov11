@@ -8,13 +8,22 @@ import tensorflow as tf
 import onnxruntime as ort
 import numpy as np
 from code_loader.helpers import visualize
-from ultralytics.tensorleap_folder.utils import extract_mapping
+from ultralytics.tensorleap_folder.utils import extract_mapping, validate_supported_models
+from ultralytics.tensorleap_folder.global_params import cfg
+supported_versions = [
+    "yolov5mu", "yolov5nu", "yolov5su",
+    "yolov8l", "yolov8n", "yolov8x",
+    "yolov9c", "yolov9m", "yolov9s", "yolov9t",
+    "yolo11l", "yolo11m", "yolo11n", "yolo11s", "yolo11x",
+    "yolo12l", "yolo12m", "yolo12n", "yolo12s"
+]
 
 def check_custom_test():
     if check_generic:
         leap_binder.check()
     m_path= model_path if model_path!=None else 'None_path'
     print("started custom tests")
+    validate_supported_models(os.path.basename(cfg.model),m_path,supported_versions)
     if not os.path.exists(m_path):
         from export_model_to_tf import start_export #TODO - currently supports only onnx
         m_path=start_export()

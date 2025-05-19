@@ -36,7 +36,7 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
     for phase, dataset_type in zip(phases, dataset_types):
         data_loader, n_samples = create_data_with_ult(cfg, yolo_data, phase=phase)
         responses.append(
-            PreprocessResponse(sample_ids=list(range(n_samples)),
+            PreprocessResponse(sample_ids=list(range(n_samples))[:100],
                                data={'dataloader':data_loader},
                                sample_id_type=int,
                                state=dataset_type))
@@ -148,7 +148,7 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
 
 
 @tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
-def ious(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
+def ious(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
     default_value=np.ones(1)*-1
     batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
     batch["imgsz"]=(batch["resized_shape"],)
@@ -190,7 +190,7 @@ def cost(pred80,pred40,pred20,gt):
 
 
 @tensorleap_custom_metric('Confusion Matrix')
-def confusion_matrix_metric(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
+def confusion_matrix_metric(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
     threshold=cfg.iou
     confusion_matrix_elements = []
     batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]

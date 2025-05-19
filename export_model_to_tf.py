@@ -32,6 +32,7 @@ def start_export(h5=False):
         config_dict = yaml.safe_load(file)
     cfg=dict_to_namespace(config_dict)
 
+
     model_path=Path(cfg.model)
     if not model_path.is_absolute():
         model_path = (cfg.tensorleap_path / model_path).resolve()

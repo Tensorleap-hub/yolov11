@@ -105,7 +105,7 @@ def extract_mapping(m_path,mapping_version):
         if not match:
             return False
         else:
-            return f"{match.group()}"[:-1].replace('v','')
+            return f"{match.group()}".replace('v','')
 
     filename=Path(m_path).stem if mapping_version==None else mapping_version
     model_type=extract_yolo_variant(filename)
@@ -114,9 +114,15 @@ def extract_mapping(m_path,mapping_version):
     source_file = mapping_folder_path / f'leap_mapping_{model_type}.yaml'
 
     if not model_type or not os.path.exists(source_file):
-        print(f"No Mapping for {m_path} was found, put your mapping in the root directory.")
+        print(f"No Mapping for {m_path} was found, put your mapping in the root directory and check if it is supported.")
     else:
         destination_file = root/ 'leap_mapping.yaml'
         shutil.copy(source_file, destination_file)
         print(f"Extracting mapping for {model_type} completed")
+
+def validate_supported_models(pt_name,arch_name,supported_versions):
+    if arch_name not in  supported_versions +['None_path']:
+        raise Exception(f"unsupported model. use one of {supported_versions} backbones")
+    if (pt_name not in supported_versions and arch_name not in supported_versions +['None_path']) or (pt_name in supported_versions and arch_name!=pt_name and arch_name !='None_path') :
+        raise Exception(f"unsupported model. use one of {supported_versions} backbones")
 
