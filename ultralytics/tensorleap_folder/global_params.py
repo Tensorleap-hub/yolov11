@@ -1,12 +1,9 @@
 from pathlib import Path
 import os
-
 import numpy as np
 import yaml
 from types import SimpleNamespace
-
 from code_loader.contract.enums import DatasetMetadataType
-
 from ultralytics.utils import callbacks as callbacks_ult
 from ultralytics.models.yolo.detect import DetectionValidator
 from ultralytics.utils import yaml_load
@@ -20,9 +17,11 @@ def dict_to_namespace(d):
         return [dict_to_namespace(i) for i in d]
     else:
         return d
+
 def get_yolo_data(cfg):
     from ultralytics.data.utils import check_det_dataset
     return check_det_dataset(cfg.data, autodownload=True)
+
 def get_criterion(model_path,cfg):
     from ultralytics import YOLO
     from ultralytics.utils import IterableSimpleNamespace
@@ -36,8 +35,8 @@ def get_criterion(model_path,cfg):
     criterion.hyp.box = cfg.box
     criterion.hyp.cls = cfg.cls
     criterion.hyp.dfl = cfg.dfl
-
     return criterion
+
 def get_dataset_yaml(cfg):
     dataset_yaml_file=check_file(cfg.data)
     return  yaml_load(dataset_yaml_file, append_filename=True)
@@ -49,6 +48,7 @@ def get_predictor_obj(cfg,yolo_data):
     predictor.data = yolo_data
     predictor.end2end = False
     return predictor
+
 def get_wanted_cls(cls_mapping,cfg):
     wanted_cls = cfg.wanted_cls
     supported_cls=np.isin(wanted_cls,list(cls_mapping.keys()))
@@ -61,12 +61,19 @@ def get_wanted_cls(cls_mapping,cfg):
     wanted_cls_dic = {k: cls_mapping[k] for k in wanted_cls}
     return wanted_cls_dic
 
-root = Path(__file__).resolve().parent.parent
-file_path = os.path.join(root, 'cfg/default.yaml')
-with open(file_path, 'r') as file:
-    config_dict = yaml.safe_load(file)
+def set_cfg_dict():
+    root = Path(__file__).resolve().parent.parent
+    file_path = os.path.join(root, 'cfg/default.yaml')
+    with open(file_path, 'r') as file:
+        config_dict = yaml.safe_load(file)
+    if isinstance(config_dict, dict):
+        return SimpleNamespace(**{k: dict_to_namespace(v) for k, v in config_dict.items()})
+    elif isinstance(config_dict, list):
+        return [dict_to_namespace(i) for i in config_dict]
+    else:
+        return config_dict
 
-cfg = dict_to_namespace(config_dict)
+cfg = set_cfg_dict()
 yolo_data=get_yolo_data(cfg)
 dataset_yaml=get_dataset_yaml(cfg)
 criterion=get_criterion(Path(cfg.model),cfg)

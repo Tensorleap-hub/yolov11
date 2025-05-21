@@ -36,7 +36,7 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
     for phase, dataset_type in zip(phases, dataset_types):
         data_loader, n_samples = create_data_with_ult(cfg, yolo_data, phase=phase)
         responses.append(
-            PreprocessResponse(sample_ids=list(range(n_samples))[:100],
+            PreprocessResponse(sample_ids=list(range(n_samples)),
                                data={'dataloader':data_loader},
                                sample_id_type=int,
                                state=dataset_type))
@@ -146,35 +146,79 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     image = rescale_min_max(image)
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
+#
+# @tensorleap_custom_metric("iou", direction=MetricDirection.Upward)
+# def iou(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
+#     default_value=np.ones(1)*-1
+#     batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
+#     batch["imgsz"]=(batch["resized_shape"],)
+#     batch["ori_shape"]=(batch["ori_shape"],)
+#     batch["ratio_pad"]= (batch["ratio_pad"],)
+#     batch["img"]=batch["img"].unsqueeze(0)
+#     pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
+#     predictor.seen=0
+#     predictor.args.plots=False
+#     predictor.stats={}
+#     predictor.stats['tp']=[]
+#     pbatch = predictor._prepare_batch(0, batch)
+#     wanted_cell_in_tr=np.isin(pbatch['cls'].numpy(),np.array(list(wanted_cls_dic.values())))
+#     cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
+#     predn = predictor._prepare_pred(pred, pbatch)
+#     iou_mat = box_iou(bbox, predn[:, :4]).numpy()
+#     iou_spec_cls_mat=iou_mat[wanted_cell_in_tr]
+#     iou_dic  = dict.fromkeys(wanted_cls_dic.keys(), default_value)
+#     if iou_mat.size == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
+#         iou_dic['mean sample iou'] =default_value
+#         return iou_dic
+#     mean_iou_per_image =  (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdims=True))).max(axis=1)
+#     mean_iou_spec_cls =  (iou_spec_cls_mat*(iou_spec_cls_mat==iou_spec_cls_mat.max(axis=0, keepdims=True))).max(axis=1) if len(iou_spec_cls_mat)!=0 else []
+#     for c in np.unique(cls[wanted_cell_in_tr]):
+#         iou_dic[all_clss[c]] = np.expand_dims(mean_iou_spec_cls[cls.numpy()[wanted_cell_in_tr] == c].mean(),axis=0)
+#     iou_dic['mean sample iou'] = np.expand_dims(mean_iou_per_image.mean(),axis=0)
+#     return iou_dic
 
+#Greedy one2one iou
 @tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
-def ious(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
-    default_value=np.ones(1)*-1
-    batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
-    batch["imgsz"]=(batch["resized_shape"],)
-    batch["ori_shape"]=(batch["ori_shape"],)
-    batch["ratio_pad"]= (batch["ratio_pad"],)
-    batch["img"]=batch["img"].unsqueeze(0)
+def ious(y_pred: np.ndarray,preprocess: SamplePreprocessResponse):
+    default_value = np.ones(1) * -1 # TODO - set to NONE
+    batch = preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
+    batch["imgsz"]     = (batch["resized_shape"],)
+    batch["ori_shape"] = (batch["ori_shape"],)
+    batch["ratio_pad"] = (batch["ratio_pad"],)
+    batch["img"]       = batch["img"].unsqueeze(0)
     pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
-    predictor.seen=0
-    predictor.args.plots=False
-    predictor.stats={}
-    predictor.stats['tp']=[]
+    predictor.seen, predictor.args.plots, predictor.stats = 0, False, {"tp": []}
     pbatch = predictor._prepare_batch(0, batch)
-    wanted_cell_in_tr=np.isin(pbatch['cls'].numpy(),np.array(list(wanted_cls_dic.values())))
-    cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
-    predn = predictor._prepare_pred(pred, pbatch)
-    iou_mat = box_iou(bbox, predn[:, :4]).numpy()
-    iou_spec_cls_mat=iou_mat[wanted_cell_in_tr]
-    iou_dic  = dict.fromkeys(wanted_cls_dic.keys(), default_value)
-    mean_iou_per_image =  (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdims=True))).max(axis=1)
-    if iou_mat.size == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
-        iou_dic['mean sample iou'] = np.expand_dims(default_value, axis=0)
-    mean_iou_spec_cls =  (iou_spec_cls_mat*(iou_spec_cls_mat==iou_spec_cls_mat.max(axis=0, keepdims=True))).max(axis=1) if len(iou_spec_cls_mat)!=0 else []
-    for c in np.unique(cls[wanted_cell_in_tr]):
-        iou_dic[all_clss[c]] = np.expand_dims(mean_iou_spec_cls[cls.numpy()[wanted_cell_in_tr] == c].mean(),axis=0)
-    iou_dic['mean sample iou'] = np.expand_dims(mean_iou_per_image.mean(),axis=0)
+    wanted_mask = np.isin(pbatch['cls'].numpy(),
+                          np.array(list(wanted_cls_dic.values())))
+    cls_gt, boxes_gt = pbatch.pop("cls"), pbatch.pop("bbox")
+    predn   = predictor._prepare_pred(pred, pbatch)
+    iou_dic = dict.fromkeys(wanted_cls_dic.keys(), default_value)
+    if boxes_gt.shape[0] == 0 and predn.shape[0] == 0:
+        iou_dic["mean sample iou"] = default_value
+        return iou_dic
+    iou_mat = box_iou(boxes_gt, predn[:, :4]).numpy()
+    n_gt, n_pred = iou_mat.shape
+    used_gt = np.zeros(n_gt, dtype=bool)
+    assigned_iou_per_gt = np.zeros(n_gt)
+    iou_per_pred = np.zeros(n_pred)
+    for j in range(n_pred):
+        i = np.argmax(iou_mat[:, j])
+        best = iou_mat[i, j]
+        if not used_gt[i]:
+            iou_per_pred[j] = best
+            assigned_iou_per_gt[i] = best
+            used_gt[i] = True
+    all_instance_ious = np.concatenate([iou_per_pred, np.zeros(np.sum(~used_gt))])
+    mean_iou_sample   = np.expand_dims(all_instance_ious.mean(), axis=0)
+    for c_id, c_name in wanted_cls_dic.items():
+        mask_c = (cls_gt.numpy() == c_name) & wanted_mask
+        if mask_c.any():
+            iou_dic[c_id] = np.expand_dims(assigned_iou_per_gt[mask_c].mean(), axis=0)
+
+    iou_dic["mean sample iou"] = mean_iou_sample
     return iou_dic
+
 
 
 @tensorleap_custom_metric("cost", direction=MetricDirection.Downward)

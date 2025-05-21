@@ -9,10 +9,9 @@ tensorleap_path: /Users/yamtawachi/tensorleap/datasets  #folder where coco datas
 tensorleap_use_test: False
 tensorleap_use_unlabeled: False
 # Train settings -------------------------------------------------------------------------------------------------------
-#TODO - make it compatible with yolov6,7 and 10
-model: models/yolov5xu.pt  # set to the core of your.h5 model
-data: coco.yaml # (str, optional) path to data file, i.e. coco8.yaml
-wanted_cls: [person , car , bowl , bed , broccoli]
+model: models/yolo11s.pt  # set to the core of your.h5 model
+data: coco128.yaml # (str, optional) path to data file, i.e. coco8.yaml
+wanted_cls:  # List(str) i.e [person , car , bowl , bed , broccoli]
 epochs: 100 # (int) number of epochs to train for
 time: # (float, optional) number of hours to train for, overrides epochs if supplied
 patience: 100 # (int) epochs to wait for no observable improvement for early stopping of training

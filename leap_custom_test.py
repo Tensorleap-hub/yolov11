@@ -10,20 +10,14 @@ import numpy as np
 from code_loader.helpers import visualize
 from ultralytics.tensorleap_folder.utils import extract_mapping, validate_supported_models
 from ultralytics.tensorleap_folder.global_params import cfg
-supported_versions = [
-    "yolov5mu", "yolov5nu", "yolov5su",
-    "yolov8l", "yolov8n", "yolov8x",
-    "yolov9c", "yolov9m", "yolov9s", "yolov9t",
-    "yolo11l", "yolo11m", "yolo11n", "yolo11s", "yolo11x",
-    "yolo12l", "yolo12m", "yolo12n", "yolo12s"
-]
+
 
 def check_custom_test():
     if check_generic:
         leap_binder.check()
     m_path= model_path if model_path!=None else 'None_path'
     print("started custom tests")
-    validate_supported_models(os.path.basename(cfg.model),m_path,supported_versions)
+    validate_supported_models(os.path.basename(cfg.model),m_path)
     if not os.path.exists(m_path):
         from export_model_to_tf import start_export #TODO - currently supports only onnx
         m_path=start_export()
@@ -34,24 +28,30 @@ def check_custom_test():
     for subset in responses: # [training, validation, test ,unlabeled]
         for idx in range(10):
             s_prepro=SamplePreprocessResponse(np.array(idx), subset)
+
             # get input images
             image = input_encoder(idx, subset)
             concat = np.expand_dims(image, axis=0)
+
             # predict
             y_pred = model([concat]) if keras_model else model.run(None, {model.get_inputs()[0].name: concat})
             if not keras_model:
                 y_pred=[tf.convert_to_tensor(p)  for p in y_pred]
             if subset.state != DataStateType.unlabeled:
+
                 # get gt
                 gt = gt_encoder(idx, subset)
                 gt_img = gt_bb_decoder(np.expand_dims(image, axis=0), np.expand_dims(gt, axis=0))
+
                 # custom metrics
                 total_loss=loss(y_pred[1].numpy(),y_pred[2].numpy(),y_pred[3].numpy(),np.expand_dims(gt,axis=0), y_pred[0].numpy())
                 cost_dic=cost(y_pred[1].numpy(),y_pred[2].numpy(),y_pred[3].numpy(),np.expand_dims(gt,axis=0))
                 iou=ious(y_pred[0].numpy(), s_prepro)
                 conf_mat = confusion_matrix_metric(y_pred[0].numpy(), s_prepro)
+
             # metadata
             meta_data=metadata_per_img(idx, subset)
+
             # vis
             img_vis=image_visualizer(np.expand_dims(image,axis=0))
             pred_img=bb_decoder(np.expand_dims(image,axis=0),y_pred[0].numpy())
@@ -65,7 +65,7 @@ def check_custom_test():
 
 if __name__ == '__main__':
     check_generic = True
-    plot_vis= True
+    plot_vis= False
     model_path = None  # Choose None if only pt version available else, use your h5/onnx model's path.
     mapping_version = None # Set as  None if the model's name is supported by ultralytics. Else, set to the base yolo architecture name (e.x if your trained model has the same architecture as yolov11s set mapping_version=yolov11s ) .
     check_custom_test()
