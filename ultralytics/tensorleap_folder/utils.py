@@ -123,9 +123,9 @@ def extract_mapping(m_path,mapping_version):
 def validate_supported_models(pt_name,arch_name):
     supported_versions = [
         "yolov5mu", "yolov5nu", "yolov5su",
-        "yolov8l", "yolov8n", "yolov8x",
+        "yolov8n", "yolov8x",
         "yolov9c", "yolov9m", "yolov9s", "yolov9t",
-        "yolo11l", "yolo11m", "yolo11n", "yolo11s", "yolo11x",
+        "yolo11m", "yolo11n", "yolo11s",
         "yolo12l", "yolo12m", "yolo12n", "yolo12s"
     ]
     if arch_name not in  supported_versions +['None_path']:

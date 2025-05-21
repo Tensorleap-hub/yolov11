@@ -11,7 +11,7 @@ tensorleap_use_unlabeled: False
 # Train settings -------------------------------------------------------------------------------------------------------
 model: models/yolo11s.pt  # set to the core of your.h5 model
 data: coco128.yaml # (str, optional) path to data file, i.e. coco8.yaml
-wanted_cls:  # List(str) i.e [person , car , bowl , bed , broccoli]
+wanted_cls:  # List(str) i.e [person , car , bowl , bed , broccoli], Metadata is calculated individually for each these class.
 epochs: 100 # (int) number of epochs to train for
 time: # (float, optional) number of hours to train for, overrides epochs if supplied
 patience: 100 # (int) epochs to wait for no observable improvement for early stopping of training

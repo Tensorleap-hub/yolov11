@@ -5,12 +5,12 @@
 This guide walks you through integrating YOLO models with Tensorleap for object detection, covering simple usage, pretrained alternatives, and custom-trained models.
 ### ✅ Current supported YOLO architectures
 
-| Family  | Variants |
-|---------|----------|
-| **YOLOv5-u** | `yolov5mu`&nbsp;•&nbsp;`yolov5nu`&nbsp;•&nbsp;`yolov5su` |
-| **YOLOv8**   | `yolov8n`&nbsp;•&nbsp;`yolov8l`&nbsp;•&nbsp;`yolov8x` |
-| **YOLOv9**   | `yolov9c`&nbsp;•&nbsp;`yolov9m`&nbsp;•&nbsp;`yolov9s`&nbsp;•&nbsp;`yolov9t` |
-| **YOLOv11**  | `yolo11n`&nbsp;•&nbsp;`yolo11s`&nbsp;•&nbsp;`yolo11m`&nbsp;•&nbsp;`yolo11l`&nbsp;•&nbsp;`yolo11x` |
+| Family  | Variants                                                                    |
+|---------|-----------------------------------------------------------------------------|
+| **YOLOv5-u** | `yolov5nu`&nbsp;•&nbsp;`yolov5su`&nbsp;•&nbsp;`yolov5mu`                    |
+| **YOLOv8**   | `yolov8n`&nbsp;•&nbsp;`yolov8x`                                             |
+| **YOLOv9**   | `yolov9t`&nbsp;•&nbsp;`yolov9s`&nbsp;•&nbsp;`yolov9m`&nbsp;•&nbsp;`yolov9c` |
+| **YOLOv11**  | `yolo11n`&nbsp;•&nbsp;`yolo11s`&nbsp;•&nbsp;`yolo11m`&nbsp;                 |
 | **YOLOv12**  | `yolo12n`&nbsp;•&nbsp;`yolo12s`&nbsp;•&nbsp;`yolo12m`&nbsp;•&nbsp;`yolo12l` |
 
 First time users, follow [For First-Time Users: Configure Your Project](#for-first-time-users-configure-your-project) to configure your project's settings and environment first.

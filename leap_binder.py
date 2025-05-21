@@ -146,41 +146,11 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     image = rescale_min_max(image)
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
-#
-# @tensorleap_custom_metric("iou", direction=MetricDirection.Upward)
-# def iou(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
-#     default_value=np.ones(1)*-1
-#     batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
-#     batch["imgsz"]=(batch["resized_shape"],)
-#     batch["ori_shape"]=(batch["ori_shape"],)
-#     batch["ratio_pad"]= (batch["ratio_pad"],)
-#     batch["img"]=batch["img"].unsqueeze(0)
-#     pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
-#     predictor.seen=0
-#     predictor.args.plots=False
-#     predictor.stats={}
-#     predictor.stats['tp']=[]
-#     pbatch = predictor._prepare_batch(0, batch)
-#     wanted_cell_in_tr=np.isin(pbatch['cls'].numpy(),np.array(list(wanted_cls_dic.values())))
-#     cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
-#     predn = predictor._prepare_pred(pred, pbatch)
-#     iou_mat = box_iou(bbox, predn[:, :4]).numpy()
-#     iou_spec_cls_mat=iou_mat[wanted_cell_in_tr]
-#     iou_dic  = dict.fromkeys(wanted_cls_dic.keys(), default_value)
-#     if iou_mat.size == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
-#         iou_dic['mean sample iou'] =default_value
-#         return iou_dic
-#     mean_iou_per_image =  (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdims=True))).max(axis=1)
-#     mean_iou_spec_cls =  (iou_spec_cls_mat*(iou_spec_cls_mat==iou_spec_cls_mat.max(axis=0, keepdims=True))).max(axis=1) if len(iou_spec_cls_mat)!=0 else []
-#     for c in np.unique(cls[wanted_cell_in_tr]):
-#         iou_dic[all_clss[c]] = np.expand_dims(mean_iou_spec_cls[cls.numpy()[wanted_cell_in_tr] == c].mean(),axis=0)
-#     iou_dic['mean sample iou'] = np.expand_dims(mean_iou_per_image.mean(),axis=0)
-#     return iou_dic
 
 #Greedy one2one iou
 @tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
 def ious(y_pred: np.ndarray,preprocess: SamplePreprocessResponse):
-    default_value = np.ones(1) * -1 # TODO - set to NONE
+    default_value =  np.ones(1) * -1 # TODO - set to NONE
     batch = preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
     batch["imgsz"]     = (batch["resized_shape"],)
     batch["ori_shape"] = (batch["ori_shape"],)
