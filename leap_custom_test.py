@@ -19,8 +19,8 @@ def check_custom_test():
     print("started custom tests")
     validate_supported_models(os.path.basename(cfg.model),m_path)
     if not os.path.exists(m_path):
-        from export_model_to_tf import start_export #TODO - currently supports only onnx
-        m_path=start_export()
+        from export_model_to_tf import onnx_exporter #TODO - currently supports only onnx
+        m_path=onnx_exporter()
         extract_mapping(m_path,mapping_version)
     keras_model=m_path.endswith(".h5")
     model = tf.keras.models.load_model(m_path) if keras_model else ort.InferenceSession(m_path)

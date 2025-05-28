@@ -10,7 +10,7 @@ This guide walks you through integrating YOLO models with Tensorleap for object 
 | **YOLOv5-u** | `yolov5nu`&nbsp;•&nbsp;`yolov5su`&nbsp;•&nbsp;`yolov5mu`                    |
 | **YOLOv8**   | `yolov8n`&nbsp;•&nbsp;`yolov8x`                                             |
 | **YOLOv9**   | `yolov9t`&nbsp;•&nbsp;`yolov9s`&nbsp;•&nbsp;`yolov9m`&nbsp;•&nbsp;`yolov9c` |
-| **YOLOv11**  | `yolo11n`&nbsp;•&nbsp;`yolo11s`&nbsp;•&nbsp;`yolo11m`&nbsp;                 |
+| **YOLOv11**  | `yolo11n`&nbsp;•&nbsp;`yolo11s`&nbsp;•&nbsp;`yolo11m`&nbsp;•&nbsp;`yolo11x` |
 | **YOLOv12**  | `yolo12n`&nbsp;•&nbsp;`yolo12s`&nbsp;•&nbsp;`yolo12m`&nbsp;•&nbsp;`yolo12l` |
 
 First time users, follow [For First-Time Users: Configure Your Project](#for-first-time-users-configure-your-project) to configure your project's settings and environment first.
@@ -47,7 +47,7 @@ Use this for the simplest setup with the default YOLOv11s model and the COCO128 
 
 ## 🧠 Case 2: Using Other Pretrained YOLO Models
 
-To use other pretrained YOLO variants from the [Ultralytics suite](https://docs.ultralytics.com/models/) without the need to have the model locally (it will be downloaded automatically from ultralytics github), follow these steps
+To use other pretrained YOLO variants from the [Ultralytics suite](https://docs.ultralytics.com/models/) without the need to have the model locally (it will be downloaded automatically from ultralytics github), follow these steps:
 
 ### Steps:
 
@@ -66,7 +66,7 @@ To use other pretrained YOLO variants from the [Ultralytics suite](https://docs.
    ```bash
    python leap_custom_test.py
    ```
-   (No changes are needed to the main guard block's parameters)   
+   (No changes are needed in the leap_custom_test.py file)   
 
 This will:
 
@@ -75,7 +75,7 @@ This will:
    * Print the ONNX path (used in Step 3)
    * Generate `leap_mapping.yaml` file
    * Run a local sanity test on 10 samples
-   * **Download the coco dataset** to <your_tensorleap_mount_path> if not present in this path. 
+   * Download the coco dataset to <your_tensorleap_mount_path> if not present in this path
    
 3. **Push to Tensorleap**
 
@@ -116,7 +116,7 @@ If you’ve trained your own model and/or have custom datasets:
     Follow step A or B base on your needs:
 
    **A. If you *do not* have an ONNX model:**
-      - Locate "leap_custom_test.py" script and set it's mapping_version value to your base yolo architecture name (e.x yolov11s).
+      - Locate "leap_custom_test.py" script and set it's mapping_version value to your base yolo architecture name (e.x yolov11s)
       - run
       ```bash
       python leap_custom_test.py
@@ -125,7 +125,7 @@ If you’ve trained your own model and/or have custom datasets:
 
    -Converts `.pt` to `.onnx`
 
-   -Prints <path_to_your_model.onnx> (will be used in step 3).
+   -Prints <path_to_your_model.onnx> (will be used in step 3)
 
    -Generates `leap_mapping.yaml`
 
@@ -183,13 +183,11 @@ Before running the project, make sure to configure it properly. Follow these ste
 
 If you intend to use Cases 2 or 3b follow the next steps to configure your local poetry env.
 
-Thanks! Here's the updated **README-style section**, now specifying Python **3.9.18** as the required version:
-
 ---
 
 ## 🛠️ Setting Up the Virtual Environment (Poetry)
 
-To get started with the project using the existing `pyproject.toml` and `poetry.lock`, follow these steps:
+To get started using the existing `pyproject.toml` and `poetry.lock`, follow these steps:
 
 ### 1. Ensure Python 3.9.18 is Installed
 
