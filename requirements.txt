@@ -14,7 +14,7 @@ pandas>=1.1.4
 seaborn>=0.11.0
 ultralytics-thop>=2.0.0
 code-loader>=1.0.75,<2.0.0
-tensorflow==2.15.0
+tensorflow==2.19.0
 ipython
 pytest
 pytest-cov
