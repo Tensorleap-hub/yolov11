@@ -1,27 +1,65 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss, tensorleap_custom_metric
+from pygments.formatters import img
+from tensorflow.python.ops.numpy_ops.np_array_ops import ones_like
+
 from ultralytics.tensorleap_folder.global_params import cfg, yolo_data, criterion, all_clss, predictor
 from ultralytics.tensorleap_folder.utils import create_data_with_ult, pre_process_dataloader
 from typing import List, Dict, Union
 import numpy as np
 from code_loader import leap_binder
-from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType, SamplePreprocessResponse
+from code_loader.contract.datasetclasses import PreprocessResponse, DataStateType, SamplePreprocessResponse, ElementInstance
 from code_loader.contract.enums import LeapDataType, MetricDirection
 from code_loader.visualizers.default_visualizers import LeapImage
-from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_preprocess, tensorleap_gt_encoder,
+from code_loader.inner_leap_binder.leapbinder_decorators import (tensorleap_preprocess, tensorleap_element_instance_preprocess, tensorleap_gt_encoder,
                                                                  tensorleap_input_encoder, tensorleap_metadata,
-                                                                 tensorleap_custom_visualizer)
+                                                                 tensorleap_custom_visualizer, tensorleap_instances_masks_encoder)
 from code_loader.contract.responsedataclasses import BoundingBox
 from code_loader.contract.visualizer_classes import LeapImageWithBBox
 from code_loader.utils import rescale_min_max
 from ultralytics.utils.plotting import output_to_target
 from ultralytics.utils.metrics import box_iou
+import cv2
 
-
+def save_chw_image(img: np.ndarray, path: str):
+    imgg = rescale_min_max(img.copy()).transpose(1, 2, 0)
+    img_bgr = cv2.cvtColor(imgg, cv2.COLOR_RGB2BGR)  # Convert RGB → BGR for OpenCV
+    cv2.imwrite(path, img_bgr)
 
 # ----------------------------------------------------data processing---------------------------------------------------
+@tensorleap_instances_masks_encoder('image')
+def instance_mask_encoder(idx: str, preprocess: PreprocessResponse) -> (np.ndarray, np.ndarray):
+    inp = input_encoder(idx, preprocess)
+    gt = gt_encoder(idx, preprocess)
+    masks = []
+    mask_label_ids = []
+    for label in gt:
+        mask = np.zeros_like(inp)
+        x, y, w, h, label_id = label
+        if np.isnan([x, y, w, h]).any():
+            return masks
+        img_width, img_height = mask.shape[1], mask.shape[2]
+        x, y, w, h = round(x * img_width - ((w * img_width) / 2)), round(y * img_height - ((h * img_height) / 2)), round(w * img_width), round(h * img_height)
 
-@tensorleap_preprocess()
+
+        # ------- remove
+        # save_chw_image(inp, "output.png")
+        # temp_img = inp.copy()
+        # temp_img[:, y:y+h, x:x+w] = 1
+        # save_chw_image(temp_img, "output1.png")
+        # temp_img = inp.copy()
+        # temp_img[:, x:x+w, y:y+h] = 1
+        # save_chw_image(temp_img, "output2.png")
+
+        mask[:, y:y+h, x:x+w] = 1
+        masks.append(mask)
+        mask_label_ids.append(int(label_id))
+    element_instances = [ElementInstance(f"{label_id}", mask) for label_id, mask in zip(mask_label_ids, masks)]
+
+    return element_instances
+
+@tensorleap_element_instance_preprocess(instance_mask_encoder)
+# @tensorleap_preprocess()
 def preprocess_func_leap() -> List[PreprocessResponse]:
     dataset_types = [DataStateType.training, DataStateType.validation]
     phases = ['train', 'val']
@@ -35,10 +73,10 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
     for phase, dataset_type in zip(phases, dataset_types):
         data_loader, n_samples = create_data_with_ult(cfg, yolo_data, phase=phase)
         responses.append(
-            PreprocessResponse(sample_ids=list(range(n_samples)),
+            PreprocessResponse(sample_ids=[str(idd) for idd in range(n_samples)],
                                data={'dataloader':data_loader},
-                               sample_id_type=int,
                                state=dataset_type))
+
     return responses
 
 
@@ -48,8 +86,8 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
 # Input encoder fetches the image with the index `idx` from the `images` array set in
 # the PreprocessResponse data. Returns a numpy array containing the sample's image.
 @tensorleap_input_encoder('image',channel_dim=1)
-def input_encoder(idx: int, preprocess: PreprocessResponse) -> np.ndarray:
-    imgs, _, _,_=pre_process_dataloader(preprocess, idx, predictor)
+def input_encoder(idx: str, preprocess: PreprocessResponse) -> np.ndarray:
+    imgs, _, _,_=pre_process_dataloader(preprocess, int(idx), predictor)
 
     return imgs.astype('float32')
 
@@ -57,7 +95,7 @@ def input_encoder(idx: int, preprocess: PreprocessResponse) -> np.ndarray:
 # Ground truth encoder fetches the label with the index `idx` from the `labels` array set in
 # the PreprocessResponse's data. Returns a numpy array containing a hot vector label correlated with the sample.
 @tensorleap_gt_encoder('classes')
-def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
+def gt_encoder(idx: str, preprocessing: PreprocessResponse) -> np.ndarray:
     """
         Description: This function takes an integer index idx and a PreprocessResponse object data as input and returns an
                      array of bounding boxes and label per bbox [x_center, y_center, width, height, label] representing ground truth annotations.
@@ -67,7 +105,7 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
         Output: bounding_boxes (np.ndarray): An array of bounding boxes extracted from the instance segmentation polygons in
                 the JSON data. Each bounding box is represented as an array containing [x_center, y_center, width, height, label].
         """
-    _, clss, bboxes, _ =pre_process_dataloader(preprocessing, idx,predictor)
+    _, clss, bboxes, _ =pre_process_dataloader(preprocessing, int(idx),predictor)
     if clss.shape[0]==0 and  bboxes.shape[0]==0:
         return np.full((1, 5), np.nan,dtype=np.float32)
     elif clss.shape[0]==0:
@@ -85,18 +123,19 @@ def gt_encoder(idx: int, preprocessing: PreprocessResponse) -> np.ndarray:
 # Metadata functions allow to add extra data for a later use in analysis.
 # This metadata adds the int digit of each sample (not a hot vector).
 @tensorleap_metadata('metadata_sample_index')
-def metadata_sample_index(idx: int, preprocess: PreprocessResponse) -> int:
+def metadata_sample_index(idx: str, preprocess: PreprocessResponse) -> str:
     return idx
 
 
 @tensorleap_metadata("image info")
-def misc_metadata(idx: int, data: PreprocessResponse) -> Dict[str, Union[str, int]]:
-    clss_info=np.unique(data.data['dataloader'].labels[idx]["cls"],return_counts=True)
+def misc_metadata(idx: str, data: PreprocessResponse) -> Dict[str, Union[str, int]]:
+    idx_int = int(idx)
+    clss_info=np.unique(data.data['dataloader'].labels[idx_int]["cls"],return_counts=True)
     d = {
-        "image path": data.data['dataloader'].im_files[idx],
-        "target path": data.data['dataloader'].label_files[idx],
-        "bbox_format": data.data['dataloader'].labels[idx]["bbox_format"],
-        "normalized image": data.data['dataloader'].labels[idx]["normalized"],
+        "image path": data.data['dataloader'].im_files[idx_int],
+        "target path": data.data['dataloader'].label_files[idx_int],
+        "bbox_format": data.data['dataloader'].labels[idx_int]["bbox_format"],
+        "normalized image": data.data['dataloader'].labels[idx_int]["normalized"],
         "idx":idx,
         "# unique classes" : len(clss_info[0]),
         "# of objects": clss_info[1].sum(),
@@ -158,39 +197,39 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
 
 
 # ---------------------------------------------------------metrics------------------------------------------------------
-@tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
-def iou_dic(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
-    batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
-    batch["imgsz"]=(batch["resized_shape"],)
-    batch["ori_shape"]=(batch["ori_shape"],)
-    batch["ratio_pad"]= (batch["ratio_pad"],)
-    batch["img"]=batch["img"].unsqueeze(0)
-    pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
-    predictor.seen=0
-    predictor.args.plots=False
-    predictor.stats={}
-    predictor.stats['tp']=[]
-    pbatch = predictor._prepare_batch(0, batch)
-    cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
-    predn = predictor._prepare_pred(pred, pbatch)
-    iou_mat = box_iou(bbox, predn[:, :4])
-    if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
-        return np.zeros(1)
+# @tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
+# def iou_dic(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
+#     batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
+#     batch["imgsz"]=(batch["resized_shape"],)
+#     batch["ori_shape"]=(batch["ori_shape"],)
+#     batch["ratio_pad"]= (batch["ratio_pad"],)
+#     batch["img"]=batch["img"].unsqueeze(0)
+#     pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
+#     predictor.seen=0
+#     predictor.args.plots=False
+#     predictor.stats={}
+#     predictor.stats['tp']=[]
+#     pbatch = predictor._prepare_batch(0, batch)
+#     cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
+#     predn = predictor._prepare_pred(pred, pbatch)
+#     iou_mat = box_iou(bbox, predn[:, :4])
+#     if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
+#         return np.zeros(1)
+#
+#     mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
+#
+#     return np.expand_dims(mean_iou_per_image.mean(),axis=0)
 
-    mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
-
-    return np.expand_dims(mean_iou_per_image.mean(),axis=0)
-
-@tensorleap_custom_metric("cost", direction=MetricDirection.Downward)
-def cost(pred80,pred40,pred20,gt):
-    gt=np.squeeze(gt,axis=0)
-    d={}
-    d["bboxes"] = torch.from_numpy(gt[...,:4])
-    d["cls"] = torch.from_numpy(gt[...,4])
-    d["batch_idx"] = torch.zeros_like(d['cls'])
-    y_pred_torch = [torch.from_numpy(s) for s in [pred80,pred40,pred20]]
-    _,loss_parts= criterion(y_pred_torch, d)
-    return {"box":loss_parts[0].unsqueeze(0).numpy(),"cls":loss_parts[1].unsqueeze(0).numpy(),"dfl":loss_parts[2].unsqueeze(0).numpy()}
+# @tensorleap_custom_metric("cost", direction=MetricDirection.Downward)
+# def cost(pred80,pred40,pred20,gt):
+#     gt=np.squeeze(gt,axis=0)
+#     d={}
+#     d["bboxes"] = torch.from_numpy(gt[...,:4])
+#     d["cls"] = torch.from_numpy(gt[...,4])
+#     d["batch_idx"] = torch.zeros_like(d['cls'])
+#     y_pred_torch = [torch.from_numpy(s) for s in [pred80,pred40,pred20]]
+#     _,loss_parts= criterion(y_pred_torch, d)
+#     return {"box":loss_parts[0].unsqueeze(0).numpy(),"cls":loss_parts[1].unsqueeze(0).numpy(),"dfl":loss_parts[2].unsqueeze(0).numpy()}
 
 
 
