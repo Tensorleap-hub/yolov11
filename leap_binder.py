@@ -28,13 +28,13 @@ def save_chw_image(img: np.ndarray, path: str):
 
 # ----------------------------------------------------data processing---------------------------------------------------
 @tensorleap_instances_masks_encoder('image')
-def instance_mask_encoder(idx: str, preprocess: PreprocessResponse) -> (np.ndarray, np.ndarray):
-    inp = input_encoder(idx, preprocess)
+def instance_mask_encoder(idx: str, preprocess: PreprocessResponse) -> List[ElementInstance]:
+    # inp = input_encoder(idx, preprocess)
     gt = gt_encoder(idx, preprocess)
     masks = []
     mask_label_ids = []
     for label in gt:
-        mask = np.zeros_like(inp)
+        mask = np.zeros((3, 640, 640))
         x, y, w, h, label_id = label
         if np.isnan([x, y, w, h]).any():
             return masks
