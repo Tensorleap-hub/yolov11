@@ -1,3 +1,5 @@
+import time
+
 from code_loader.contract.datasetclasses import SamplePreprocessResponse
 from code_loader.contract.enums import DataStateType
 
@@ -12,7 +14,7 @@ from code_loader.helpers import visualize
 
 def check_custom_test():
     check_generic = True
-    plot_vis= True
+    plot_vis= False
     if check_generic:
         leap_binder.check()
     print("started custom tests")
@@ -23,11 +25,13 @@ def check_custom_test():
 
     responses = preprocess_func_leap()
     for subset in responses:
-        for idx in range(1):
+        for idx in range(100):
             idx = str(idx)
             s_prepro=SamplePreprocessResponse(np.array(idx), subset)
             image = input_encoder(idx, subset)
-            masks = instance_mask_encoder(idx, subset)
+            t0 = time.time()
+            masks = instance_mask_encoder(idx, subset, 0)
+            print(f"mask took {time.time()-t0} seconds, {1} instances")
             concat = np.expand_dims(image, axis=0)
             meta_data=misc_metadata(idx, subset)
             y_pred = model([concat])

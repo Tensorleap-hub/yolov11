@@ -28,37 +28,28 @@ def save_chw_image(img: np.ndarray, path: str):
 
 # ----------------------------------------------------data processing---------------------------------------------------
 @tensorleap_instances_masks_encoder('image')
-def instance_mask_encoder(idx: str, preprocess: PreprocessResponse) -> List[ElementInstance]:
-    # inp = input_encoder(idx, preprocess)
+def instance_mask_encoder(idx: str, preprocess: PreprocessResponse, instance_idx) -> ElementInstance:
     gt = gt_encoder(idx, preprocess)
-    masks = []
-    mask_label_ids = []
-    for label in gt:
-        mask = np.zeros((3, 640, 640))
-        x, y, w, h, label_id = label
-        if np.isnan([x, y, w, h]).any():
-            return masks
-        img_width, img_height = mask.shape[1], mask.shape[2]
-        x, y, w, h = round(x * img_width - ((w * img_width) / 2)), round(y * img_height - ((h * img_height) / 2)), round(w * img_width), round(h * img_height)
+    label = gt[instance_idx]
+    mask = np.zeros((3, 640, 640))
+    x, y, w, h, label_id = label
+    if np.isnan([x, y, w, h]).any():
+        return None
+    img_width, img_height = mask.shape[1], mask.shape[2]
+    x, y, w, h = round(x * img_width - ((w * img_width) / 2)), round(y * img_height - ((h * img_height) / 2)), round(w * img_width), round(h * img_height)
+
+    mask[:, y:y+h, x:x+w] = 1
+    element_instance = ElementInstance(f"{label_id}", mask)
+
+    return element_instance
 
 
-        # ------- remove
-        # save_chw_image(inp, "output.png")
-        # temp_img = inp.copy()
-        # temp_img[:, y:y+h, x:x+w] = 1
-        # save_chw_image(temp_img, "output1.png")
-        # temp_img = inp.copy()
-        # temp_img[:, x:x+w, y:y+h] = 1
-        # save_chw_image(temp_img, "output2.png")
+@tensorleap_instances_length_encoder('image')
+def instances_length_encoder(idx: str, preprocess: PreprocessResponse) -> int:
+    gt = gt_encoder(idx, preprocess)
+    return len(gt)
 
-        mask[:, y:y+h, x:x+w] = 1
-        masks.append(mask)
-        mask_label_ids.append(int(label_id))
-    element_instances = [ElementInstance(f"{label_id}", mask) for label_id, mask in zip(mask_label_ids, masks)]
-
-    return element_instances
-
-@tensorleap_element_instance_preprocess(instance_mask_encoder)
+@tensorleap_element_instance_preprocess(instances_length_encoder)
 # @tensorleap_preprocess()
 def preprocess_func_leap() -> List[PreprocessResponse]:
     dataset_types = [DataStateType.training, DataStateType.validation]
