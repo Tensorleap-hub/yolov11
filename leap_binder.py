@@ -1,5 +1,6 @@
 import torch
-from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss, tensorleap_custom_metric
+from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss, tensorleap_custom_metric, \
+    tensorleap_instances_length_encoder
 from pygments.formatters import img
 from tensorflow.python.ops.numpy_ops.np_array_ops import ones_like
 
@@ -33,7 +34,7 @@ def instance_mask_encoder(idx: str, preprocess: PreprocessResponse, instance_idx
     label = gt[instance_idx]
     mask = np.zeros((3, 640, 640))
     x, y, w, h, label_id = label
-    if np.isnan([x, y, w, h]).any():
+    if np.isnan([x, y, w, h, label_id]).any():
         return None
     img_width, img_height = mask.shape[1], mask.shape[2]
     x, y, w, h = round(x * img_width - ((w * img_width) / 2)), round(y * img_height - ((h * img_height) / 2)), round(w * img_width), round(h * img_height)
@@ -47,6 +48,10 @@ def instance_mask_encoder(idx: str, preprocess: PreprocessResponse, instance_idx
 @tensorleap_instances_length_encoder('image')
 def instances_length_encoder(idx: str, preprocess: PreprocessResponse) -> int:
     gt = gt_encoder(idx, preprocess)
+    # for label in gt:
+    #     x, y, w, h, label_id = label
+    #     if np.isnan([x, y, w, h, label_id]).any():
+    #         return 0
     return len(gt)
 
 @tensorleap_element_instance_preprocess(instances_length_encoder)

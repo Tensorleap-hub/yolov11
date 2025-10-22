@@ -5,7 +5,7 @@ from code_loader.contract.enums import DataStateType
 
 from leap_binder import (input_encoder, preprocess_func_leap, gt_encoder,
                          leap_binder, loss, gt_bb_decoder, image_visualizer, bb_decoder,
-                         misc_metadata, instance_mask_encoder)
+                         misc_metadata, instance_mask_encoder, instances_length_encoder)
 import tensorflow as tf
 import numpy as np
 from code_loader.helpers import visualize
@@ -25,19 +25,21 @@ def check_custom_test():
 
     responses = preprocess_func_leap()
     for subset in responses:
-        for idx in range(100):
+        for idx in range(1000):
             idx = str(idx)
             s_prepro=SamplePreprocessResponse(np.array(idx), subset)
-            image = input_encoder(idx, subset)
+            image = input_encoder(idx, subset)[0]
             t0 = time.time()
-            masks = instance_mask_encoder(idx, subset, 0)
-            print(f"mask took {time.time()-t0} seconds, {1} instances")
+            n_labels = instances_length_encoder(idx, subset)
+            for label in range(n_labels):
+                print(f"masks took {time.time() - t0} seconds, {1} instances, id: {idx}, label: {label}/{n_labels}")
+                mask = instance_mask_encoder(idx, subset, label)
             concat = np.expand_dims(image, axis=0)
             meta_data=misc_metadata(idx, subset)
             y_pred = model([concat])
             if subset.state != DataStateType.unlabeled:
                 # iou = iou_dic(y_pred[0].numpy(), s_prepro)
-                gt = gt_encoder(idx, subset)
+                gt = gt_encoder(idx, subset)[0]
                 total_loss=loss(y_pred[1].numpy(),y_pred[2].numpy(),y_pred[3].numpy(),np.expand_dims(gt,axis=0), y_pred[0].numpy())
                 # cost_dic=cost(y_pred[1].numpy(),y_pred[2].numpy(),y_pred[3].numpy(),np.expand_dims(gt,axis=0))
                 gt_img = gt_bb_decoder(np.expand_dims(image, axis=0), np.expand_dims(gt, axis=0))
