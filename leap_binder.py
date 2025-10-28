@@ -83,7 +83,9 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
 # the PreprocessResponse data. Returns a numpy array containing the sample's image.
 @tensorleap_input_encoder('image',channel_dim=1)
 def input_encoder(idx: str, preprocess: PreprocessResponse) -> np.ndarray:
-    imgs, _, _,_=pre_process_dataloader(preprocess, int(idx), predictor)
+    # idx = preprocess.sample_ids[0]
+
+    imgs, _, _,_ = pre_process_dataloader(preprocess, int(idx), predictor)
 
     return imgs.astype('float32')
 
@@ -101,6 +103,7 @@ def gt_encoder(idx: str, preprocessing: PreprocessResponse) -> np.ndarray:
         Output: bounding_boxes (np.ndarray): An array of bounding boxes extracted from the instance segmentation polygons in
                 the JSON data. Each bounding box is represented as an array containing [x_center, y_center, width, height, label].
         """
+    # idx = preprocessing.sample_ids[0]
     _, clss, bboxes, _ =pre_process_dataloader(preprocessing, int(idx),predictor)
     if clss.shape[0]==0 and  bboxes.shape[0]==0:
         return np.full((1, 5), np.nan,dtype=np.float32)
@@ -118,25 +121,25 @@ def gt_encoder(idx: str, preprocessing: PreprocessResponse) -> np.ndarray:
 
 # Metadata functions allow to add extra data for a later use in analysis.
 # This metadata adds the int digit of each sample (not a hot vector).
-@tensorleap_metadata('metadata_sample_index')
-def metadata_sample_index(idx: str, preprocess: PreprocessResponse) -> str:
-    return idx
+# @tensorleap_metadata('metadata_sample_index')
+# def metadata_sample_index(idx: str, preprocess: PreprocessResponse) -> str:
+#     return idx
 
 
-@tensorleap_metadata("image info")
-def misc_metadata(idx: str, data: PreprocessResponse) -> Dict[str, Union[str, int]]:
-    idx_int = int(idx)
-    clss_info=np.unique(data.data['dataloader'].labels[idx_int]["cls"],return_counts=True)
-    d = {
-        "image path": data.data['dataloader'].im_files[idx_int],
-        "target path": data.data['dataloader'].label_files[idx_int],
-        "bbox_format": data.data['dataloader'].labels[idx_int]["bbox_format"],
-        "normalized image": data.data['dataloader'].labels[idx_int]["normalized"],
-        "idx":idx,
-        "# unique classes" : len(clss_info[0]),
-        "# of objects": clss_info[1].sum(),
-     }
-    return d
+# @tensorleap_metadata("image info")
+# def misc_metadata(idx: str, data: PreprocessResponse) -> Dict[str, Union[str, int]]:
+#     idx_int = int(idx)
+#     clss_info=np.unique(data.data['dataloader'].labels[idx_int]["cls"],return_counts=True)
+#     d = {
+#         "image path": data.data['dataloader'].im_files[idx_int],
+#         "target path": data.data['dataloader'].label_files[idx_int],
+#         "bbox_format": data.data['dataloader'].labels[idx_int]["bbox_format"],
+#         "normalized image": data.data['dataloader'].labels[idx_int]["normalized"],
+#         "idx":idx,
+#         "# unique classes" : len(clss_info[0]),
+#         "# of objects": clss_info[1].sum(),
+#      }
+#     return d
 
 # ----------------------------------------------------------loss--------------------------------------------------------
 
