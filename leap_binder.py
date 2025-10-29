@@ -22,6 +22,90 @@ from ultralytics.utils.plotting import output_to_target
 from ultralytics.utils.metrics import box_iou
 import cv2
 
+
+COCO_ID_TO_NAME = {
+    1: "person",
+    2: "bicycle",
+    3: "car",
+    4: "motorcycle",
+    5: "airplane",
+    6: "bus",
+    7: "train",
+    8: "truck",
+    9: "boat",
+    10: "traffic light",
+    11: "fire hydrant",
+    12: "stop sign",
+    13: "parking meter",
+    14: "bench",
+    15: "bird",
+    16: "cat",
+    17: "dog",
+    18: "horse",
+    19: "sheep",
+    20: "cow",
+    21: "elephant",
+    22: "bear",
+    23: "zebra",
+    24: "giraffe",
+    25: "backpack",
+    26: "umbrella",
+    27: "handbag",
+    28: "tie",
+    29: "suitcase",
+    30: "frisbee",
+    31: "skis",
+    32: "snowboard",
+    33: "sports ball",
+    34: "kite",
+    35: "baseball bat",
+    36: "baseball glove",
+    37: "skateboard",
+    38: "surfboard",
+    39: "tennis racket",
+    40: "bottle",
+    41: "wine glass",
+    42: "cup",
+    43: "fork",
+    44: "knife",
+    45: "spoon",
+    46: "bowl",
+    47: "banana",
+    48: "apple",
+    49: "sandwich",
+    50: "orange",
+    51: "broccoli",
+    52: "carrot",
+    53: "hot dog",
+    54: "pizza",
+    55: "donut",
+    56: "cake",
+    57: "chair",
+    58: "couch",
+    59: "potted plant",
+    60: "bed",
+    61: "dining table",
+    62: "toilet",
+    63: "tv",
+    64: "laptop",
+    65: "mouse",
+    66: "remote",
+    67: "keyboard",
+    68: "cell phone",
+    69: "microwave",
+    70: "oven",
+    71: "toaster",
+    72: "sink",
+    73: "refrigerator",
+    74: "book",
+    75: "clock",
+    76: "vase",
+    77: "scissors",
+    78: "teddy bear",
+    79: "hair drier",
+    80: "toothbrush"
+}
+
 def save_chw_image(img: np.ndarray, path: str):
     imgg = rescale_min_max(img.copy()).transpose(1, 2, 0)
     img_bgr = cv2.cvtColor(imgg, cv2.COLOR_RGB2BGR)  # Convert RGB → BGR for OpenCV
@@ -40,7 +124,10 @@ def instance_mask_encoder(idx: str, preprocess: PreprocessResponse, instance_idx
     x, y, w, h = round(x * img_width - ((w * img_width) / 2)), round(y * img_height - ((h * img_height) / 2)), round(w * img_width), round(h * img_height)
 
     mask[:, y:y+h, x:x+w] = 1
-    element_instance = ElementInstance(f"{label_id}", mask)
+
+
+
+    element_instance = ElementInstance(COCO_ID_TO_NAME[int(label_id) + 1], mask)
 
     return element_instance
 
@@ -66,10 +153,10 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
     if cfg.tensorleap_use_unlabeled:
         phases.append('unlabeled')
         dataset_types.append(DataStateType.unlabeled)
-    for phase, dataset_type in zip(phases, dataset_types):
+    for i, (phase, dataset_type) in enumerate(zip(phases, dataset_types)):
         data_loader, n_samples = create_data_with_ult(cfg, yolo_data, phase=phase)
         responses.append(
-            PreprocessResponse(sample_ids=[str(idd) for idd in range(n_samples)],
+            PreprocessResponse(sample_ids=[str(idd + i * 1000) for idd in range(1000)],
                                data={'dataloader':data_loader},
                                state=dataset_type))
 
@@ -83,9 +170,7 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
 # the PreprocessResponse data. Returns a numpy array containing the sample's image.
 @tensorleap_input_encoder('image',channel_dim=1)
 def input_encoder(idx: str, preprocess: PreprocessResponse) -> np.ndarray:
-    # idx = preprocess.sample_ids[0]
-
-    imgs, _, _,_ = pre_process_dataloader(preprocess, int(idx), predictor)
+    imgs, _, _,_=pre_process_dataloader(preprocess, int(idx), predictor)
 
     return imgs.astype('float32')
 
@@ -103,7 +188,6 @@ def gt_encoder(idx: str, preprocessing: PreprocessResponse) -> np.ndarray:
         Output: bounding_boxes (np.ndarray): An array of bounding boxes extracted from the instance segmentation polygons in
                 the JSON data. Each bounding box is represented as an array containing [x_center, y_center, width, height, label].
         """
-    # idx = preprocessing.sample_ids[0]
     _, clss, bboxes, _ =pre_process_dataloader(preprocessing, int(idx),predictor)
     if clss.shape[0]==0 and  bboxes.shape[0]==0:
         return np.full((1, 5), np.nan,dtype=np.float32)
@@ -121,25 +205,25 @@ def gt_encoder(idx: str, preprocessing: PreprocessResponse) -> np.ndarray:
 
 # Metadata functions allow to add extra data for a later use in analysis.
 # This metadata adds the int digit of each sample (not a hot vector).
-# @tensorleap_metadata('metadata_sample_index')
-# def metadata_sample_index(idx: str, preprocess: PreprocessResponse) -> str:
-#     return idx
+@tensorleap_metadata('metadata_sample_index')
+def metadata_sample_index(idx: str, preprocess: PreprocessResponse) -> str:
+    return idx
 
 
-# @tensorleap_metadata("image info")
-# def misc_metadata(idx: str, data: PreprocessResponse) -> Dict[str, Union[str, int]]:
-#     idx_int = int(idx)
-#     clss_info=np.unique(data.data['dataloader'].labels[idx_int]["cls"],return_counts=True)
-#     d = {
-#         "image path": data.data['dataloader'].im_files[idx_int],
-#         "target path": data.data['dataloader'].label_files[idx_int],
-#         "bbox_format": data.data['dataloader'].labels[idx_int]["bbox_format"],
-#         "normalized image": data.data['dataloader'].labels[idx_int]["normalized"],
-#         "idx":idx,
-#         "# unique classes" : len(clss_info[0]),
-#         "# of objects": clss_info[1].sum(),
-#      }
-#     return d
+@tensorleap_metadata("image info")
+def misc_metadata(idx: str, data: PreprocessResponse) -> Dict[str, Union[str, int]]:
+    idx_int = int(idx)
+    clss_info=np.unique(data.data['dataloader'].labels[idx_int]["cls"],return_counts=True)
+    d = {
+        "image path": data.data['dataloader'].im_files[idx_int],
+        "target path": data.data['dataloader'].label_files[idx_int],
+        "bbox_format": data.data['dataloader'].labels[idx_int]["bbox_format"],
+        "normalized image": data.data['dataloader'].labels[idx_int]["normalized"],
+        "idx":idx,
+        "# unique classes" : len(clss_info[0]),
+        "# of objects": clss_info[1].sum(),
+     }
+    return d
 
 # ----------------------------------------------------------loss--------------------------------------------------------
 
