@@ -135,10 +135,10 @@ def instance_mask_encoder(idx: str, preprocess: PreprocessResponse, instance_idx
 @tensorleap_instances_length_encoder('image')
 def instances_length_encoder(idx: str, preprocess: PreprocessResponse) -> int:
     gt = gt_encoder(idx, preprocess)
-    # for label in gt:
-    #     x, y, w, h, label_id = label
-    #     if np.isnan([x, y, w, h, label_id]).any():
-    #         return 0
+    for label in gt:
+        x, y, w, h, label_id = label
+        if np.isnan([x, y, w, h, label_id]).any():
+            return 0
     return len(gt)
 
 @tensorleap_element_instance_preprocess(instances_length_encoder)
