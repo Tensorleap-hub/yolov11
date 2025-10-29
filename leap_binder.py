@@ -22,6 +22,90 @@ from ultralytics.utils.plotting import output_to_target
 from ultralytics.utils.metrics import box_iou
 import cv2
 
+
+COCO_ID_TO_NAME = {
+    1: "person",
+    2: "bicycle",
+    3: "car",
+    4: "motorcycle",
+    5: "airplane",
+    6: "bus",
+    7: "train",
+    8: "truck",
+    9: "boat",
+    10: "traffic light",
+    11: "fire hydrant",
+    12: "stop sign",
+    13: "parking meter",
+    14: "bench",
+    15: "bird",
+    16: "cat",
+    17: "dog",
+    18: "horse",
+    19: "sheep",
+    20: "cow",
+    21: "elephant",
+    22: "bear",
+    23: "zebra",
+    24: "giraffe",
+    25: "backpack",
+    26: "umbrella",
+    27: "handbag",
+    28: "tie",
+    29: "suitcase",
+    30: "frisbee",
+    31: "skis",
+    32: "snowboard",
+    33: "sports ball",
+    34: "kite",
+    35: "baseball bat",
+    36: "baseball glove",
+    37: "skateboard",
+    38: "surfboard",
+    39: "tennis racket",
+    40: "bottle",
+    41: "wine glass",
+    42: "cup",
+    43: "fork",
+    44: "knife",
+    45: "spoon",
+    46: "bowl",
+    47: "banana",
+    48: "apple",
+    49: "sandwich",
+    50: "orange",
+    51: "broccoli",
+    52: "carrot",
+    53: "hot dog",
+    54: "pizza",
+    55: "donut",
+    56: "cake",
+    57: "chair",
+    58: "couch",
+    59: "potted plant",
+    60: "bed",
+    61: "dining table",
+    62: "toilet",
+    63: "tv",
+    64: "laptop",
+    65: "mouse",
+    66: "remote",
+    67: "keyboard",
+    68: "cell phone",
+    69: "microwave",
+    70: "oven",
+    71: "toaster",
+    72: "sink",
+    73: "refrigerator",
+    74: "book",
+    75: "clock",
+    76: "vase",
+    77: "scissors",
+    78: "teddy bear",
+    79: "hair drier",
+    80: "toothbrush"
+}
+
 def save_chw_image(img: np.ndarray, path: str):
     imgg = rescale_min_max(img.copy()).transpose(1, 2, 0)
     img_bgr = cv2.cvtColor(imgg, cv2.COLOR_RGB2BGR)  # Convert RGB → BGR for OpenCV
@@ -40,7 +124,10 @@ def instance_mask_encoder(idx: str, preprocess: PreprocessResponse, instance_idx
     x, y, w, h = round(x * img_width - ((w * img_width) / 2)), round(y * img_height - ((h * img_height) / 2)), round(w * img_width), round(h * img_height)
 
     mask[:, y:y+h, x:x+w] = 1
-    element_instance = ElementInstance(f"{label_id}", mask)
+
+
+
+    element_instance = ElementInstance(COCO_ID_TO_NAME[int(label_id) + 1], mask)
 
     return element_instance
 
@@ -66,10 +153,10 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
     if cfg.tensorleap_use_unlabeled:
         phases.append('unlabeled')
         dataset_types.append(DataStateType.unlabeled)
-    for phase, dataset_type in zip(phases, dataset_types):
+    for i, (phase, dataset_type) in enumerate(zip(phases, dataset_types)):
         data_loader, n_samples = create_data_with_ult(cfg, yolo_data, phase=phase)
         responses.append(
-            PreprocessResponse(sample_ids=[str(idd) for idd in range(n_samples)],
+            PreprocessResponse(sample_ids=[str(idd + i * 1000) for idd in range(1000)],
                                data={'dataloader':data_loader},
                                state=dataset_type))
 
@@ -228,11 +315,11 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
 #     return {"box":loss_parts[0].unsqueeze(0).numpy(),"cls":loss_parts[1].unsqueeze(0).numpy(),"dfl":loss_parts[2].unsqueeze(0).numpy()}
 
 
-
-leap_binder.add_prediction(name='object detection', labels=["x", "y", "w", "h"] + [cl for cl in all_clss.values()], channel_dim=1)
-leap_binder.add_prediction(name='concatenate_20', labels=[str(i) for i in range(20)], channel_dim=-1)
-leap_binder.add_prediction(name='concatenate_40', labels=[str(i) for i in range(40)], channel_dim=-1)
-leap_binder.add_prediction(name='concatenate_80', labels=[str(i) for i in range(80)], channel_dim=-1)
+#
+# leap_binder.add_prediction(name='object detection', labels=["x", "y", "w", "h"] + [cl for cl in all_clss.values()], channel_dim=1)
+# leap_binder.add_prediction(name='concatenate_20', labels=[str(i) for i in range(20)], channel_dim=-1)
+# leap_binder.add_prediction(name='concatenate_40', labels=[str(i) for i in range(40)], channel_dim=-1)
+# leap_binder.add_prediction(name='concatenate_80', labels=[str(i) for i in range(80)], channel_dim=-1)
 
 if __name__ == '__main__':
     leap_binder.check()

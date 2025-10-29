@@ -1,9 +1,10 @@
-codeIntegrationId: 68b9a7762282de8f7041f30d
-projectId: 689499ec63123386aed6d5f8
+codeIntegrationId: 6900dfba31c9e4d49644bead
+projectId: 6900dfb331c9e4d49644bea6
 secretId: ""
 branch: master
-entryFile: leap_binder.py
+entryFile: leap_integration.py
 include:
+    - leap_integration.py
     - leap_binder.py
     - leap_custom_test.py
     - global_params.py
