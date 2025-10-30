@@ -261,6 +261,14 @@ def image_visualizer(image: np.ndarray) -> LeapImage:
     image = rescale_min_max(image.squeeze(0))
     return LeapImage((image.transpose(1,2,0)), compress=False)
 
+@tensorleap_custom_visualizer('image_visualizer_original', LeapDataType.Image)
+def image_visualizer_original(image: np.ndarray, sample_preprocess_response: SamplePreprocessResponse):
+    id = sample_preprocess_response.sample_ids[0]
+    sample_id = sample_preprocess_response.preprocess_response.instance_to_sample_ids_mappings[str(id)]
+    image = input_encoder(sample_id, sample_preprocess_response.preprocess_response)
+    image = rescale_min_max(image)
+    return LeapImage((image.transpose(1,2,0)), compress=False)
+
 @tensorleap_custom_visualizer("bb_decoder", LeapDataType.ImageWithBBox)
 def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     """
@@ -276,7 +284,6 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     bbox = [BoundingBox(x=bbx[0], y=bbx[1], width=bbx[2], height=bbx[3], confidence=bbx[4], label=all_clss.get(int(bbx[5]),'Unknown Class')) for bbx in post_proc_pred]
     image = rescale_min_max(image)
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
-
 
 
 # ---------------------------------------------------------metrics------------------------------------------------------
