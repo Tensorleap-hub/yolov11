@@ -1,6 +1,6 @@
 import torch
 from code_loader.inner_leap_binder.leapbinder_decorators import tensorleap_custom_loss, tensorleap_custom_metric, \
-    tensorleap_instances_length_encoder
+    tensorleap_instances_length_encoder, tensorleap_custom_instances_metric
 from pygments.formatters import img
 from tensorflow.python.ops.numpy_ops.np_array_ops import ones_like
 
@@ -125,8 +125,6 @@ def instance_mask_encoder(idx: str, preprocess: PreprocessResponse, instance_idx
 
     mask[:, y:y+h, x:x+w] = 1
 
-
-
     element_instance = ElementInstance(COCO_ID_TO_NAME[int(label_id) + 1], mask)
 
     return element_instance
@@ -141,7 +139,7 @@ def instances_length_encoder(idx: str, preprocess: PreprocessResponse) -> int:
             return 0
     return len(gt)
 
-@tensorleap_element_instance_preprocess(instances_length_encoder)
+@tensorleap_element_instance_preprocess(instances_length_encoder, instance_mask_encoder)
 # @tensorleap_preprocess()
 def preprocess_func_leap() -> List[PreprocessResponse]:
     dataset_types = [DataStateType.training, DataStateType.validation]
@@ -156,7 +154,7 @@ def preprocess_func_leap() -> List[PreprocessResponse]:
     for i, (phase, dataset_type) in enumerate(zip(phases, dataset_types)):
         data_loader, n_samples = create_data_with_ult(cfg, yolo_data, phase=phase)
         responses.append(
-            PreprocessResponse(sample_ids=[str(idd + i * 1000) for idd in range(1000)],
+            PreprocessResponse(sample_ids=[str(idd + i * 1000) for idd in range(50)],
                                data={'dataloader':data_loader},
                                state=dataset_type))
 
@@ -286,29 +284,117 @@ def bb_decoder(image: np.ndarray, predictions: np.ndarray) -> LeapImageWithBBox:
     return LeapImageWithBBox(data=(image.transpose(1,2,0)), bounding_boxes=bbox)
 
 
+
+
+
 # ---------------------------------------------------------metrics------------------------------------------------------
-# @tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
-# def iou_dic(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
-#     batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
-#     batch["imgsz"]=(batch["resized_shape"],)
-#     batch["ori_shape"]=(batch["ori_shape"],)
-#     batch["ratio_pad"]= (batch["ratio_pad"],)
-#     batch["img"]=batch["img"].unsqueeze(0)
-#     pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
-#     predictor.seen=0
-#     predictor.args.plots=False
-#     predictor.stats={}
-#     predictor.stats['tp']=[]
-#     pbatch = predictor._prepare_batch(0, batch)
-#     cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
-#     predn = predictor._prepare_pred(pred, pbatch)
-#     iou_mat = box_iou(bbox, predn[:, :4])
-#     if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
-#         return np.zeros(1)
-#
-#     mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
-#
-#     return np.expand_dims(mean_iou_per_image.mean(),axis=0)
+@tensorleap_custom_metric("ious", direction=MetricDirection.Upward)
+def iou_dic(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[str, Union[float, int]]:
+    batch=preprocess.preprocess_response.data['dataloader'][int(preprocess.sample_ids)]
+    batch["imgsz"]=(batch["resized_shape"],)
+    batch["ori_shape"]=(batch["ori_shape"],)
+    batch["ratio_pad"]= (batch["ratio_pad"],)
+    batch["img"]=batch["img"].unsqueeze(0)
+    pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
+    predictor.seen=0
+    predictor.args.plots=False
+    predictor.stats={}
+    predictor.stats['tp']=[]
+    pbatch = predictor._prepare_batch(0, batch)
+    cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
+    predn = predictor._prepare_pred(pred, pbatch)
+    iou_mat = box_iou(bbox, predn[:, :4])
+    if iou_mat.numel() == 0 or iou_mat.shape[1] == 0 or iou_mat.shape[0] == 0:
+        return np.zeros(1)
+
+    mean_iou_per_image =   (iou_mat*(iou_mat==iou_mat.max(axis=0, keepdim=True).values)).max(axis=1).values.numpy()
+
+    return np.expand_dims(mean_iou_per_image.mean(),axis=0)
+
+
+@tensorleap_custom_instances_metric("example_instance_metric", direction=MetricDirection.Upward)
+def example_custom_instance_metric(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
+    sample_id = preprocess.sample_ids[0]
+    n_instances = instances_length_encoder(sample_id, preprocess.preprocess_response)
+    return {i: np.random.rand(1).astype(np.float32) for i in range(n_instances)}
+
+
+@tensorleap_custom_instances_metric("instance_best_iou", direction=MetricDirection.Upward)
+def instance_best_iou(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
+    """Per-GT-instance IoU of the best-matching prediction (0 if unmatched)."""
+    sample_id = preprocess.sample_ids[0]
+    n_instances = instances_length_encoder(sample_id, preprocess.preprocess_response)
+    result = {i: np.zeros(1, dtype=np.float32) for i in range(n_instances)}
+    if n_instances == 0:
+        return result
+
+    batch = preprocess.preprocess_response.data['dataloader'][int(sample_id)]
+    batch["imgsz"] = (batch["resized_shape"],)
+    batch["ori_shape"] = (batch["ori_shape"],)
+    batch["ratio_pad"] = (batch["ratio_pad"],)
+    batch["img"] = batch["img"].unsqueeze(0)
+    pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
+    predictor.seen = 0
+    predictor.args.plots = False
+    predictor.stats = {'tp': []}
+    pbatch = predictor._prepare_batch(0, batch)
+    gt_cls, gt_bbox = pbatch.pop("cls"), pbatch.pop("bbox")
+    predn = predictor._prepare_pred(pred, pbatch)
+
+    if predn.shape[0] == 0 or gt_bbox.shape[0] == 0:
+        return result
+
+    iou_mat = box_iou(gt_bbox, predn[:, :4])
+    # Restrict matches to predictions whose class equals the GT class.
+    same_class = (gt_cls.view(-1, 1) == predn[:, 5].view(1, -1))
+    iou_mat = iou_mat * same_class.to(iou_mat.dtype)
+
+    best_iou_per_gt = iou_mat.max(dim=1).values.numpy()
+    for i in range(min(n_instances, best_iou_per_gt.shape[0])):
+        result[i] = np.array([best_iou_per_gt[i]], dtype=np.float32)
+    return result
+
+
+@tensorleap_custom_instances_metric("instance_match_confidence", direction=MetricDirection.Upward)
+def instance_match_confidence(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
+    """Per-GT-instance confidence of the best-matching same-class prediction (0 if unmatched)."""
+    sample_id = preprocess.sample_ids[0]
+    n_instances = instances_length_encoder(sample_id, preprocess.preprocess_response)
+    result = {i: np.zeros(1, dtype=np.float32) for i in range(n_instances)}
+    if n_instances == 0:
+        return result
+
+    batch = preprocess.preprocess_response.data['dataloader'][int(sample_id)]
+    batch["imgsz"] = (batch["resized_shape"],)
+    batch["ori_shape"] = (batch["ori_shape"],)
+    batch["ratio_pad"] = (batch["ratio_pad"],)
+    batch["img"] = batch["img"].unsqueeze(0)
+    pred = predictor.postprocess(torch.from_numpy(y_pred))[0]
+    predictor.seen = 0
+    predictor.args.plots = False
+    predictor.stats = {'tp': []}
+    pbatch = predictor._prepare_batch(0, batch)
+    gt_cls, gt_bbox = pbatch.pop("cls"), pbatch.pop("bbox")
+    predn = predictor._prepare_pred(pred, pbatch)
+
+    if predn.shape[0] == 0 or gt_bbox.shape[0] == 0:
+        return result
+
+    iou_mat = box_iou(gt_bbox, predn[:, :4])
+    same_class = (gt_cls.view(-1, 1) == predn[:, 5].view(1, -1))
+    iou_mat = iou_mat * same_class.to(iou_mat.dtype)
+
+    best_pred_idx = iou_mat.argmax(dim=1).numpy()
+    best_iou_per_gt = iou_mat.max(dim=1).values.numpy()
+    confidences = predn[:, 4].numpy()
+    for i in range(min(n_instances, best_pred_idx.shape[0])):
+        if best_iou_per_gt[i] > 0:
+            result[i] = np.array([confidences[best_pred_idx[i]]], dtype=np.float32)
+    return result
+
+
+
+
 
 # @tensorleap_custom_metric("cost", direction=MetricDirection.Downward)
 # def cost(pred80,pred40,pred20,gt):
