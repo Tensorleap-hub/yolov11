@@ -315,7 +315,7 @@ def iou_dic(y_pred: np.ndarray, preprocess: SamplePreprocessResponse): #-> Dict[
 @tensorleap_custom_instances_metric("example_instance_metric", direction=MetricDirection.Upward)
 def example_custom_instance_metric(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
     sample_id = preprocess.sample_ids[0]
-    n_instances = instances_length_encoder(sample_id, preprocess.preprocess_response)
+    n_instances = instances_length_encoder(str(sample_id), preprocess.preprocess_response)
     return {i: np.random.rand(1).astype(np.float32) for i in range(n_instances)}
 
 
@@ -323,7 +323,7 @@ def example_custom_instance_metric(y_pred: np.ndarray, preprocess: SamplePreproc
 def instance_best_iou(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
     """Per-GT-instance IoU of the best-matching prediction (0 if unmatched)."""
     sample_id = preprocess.sample_ids[0]
-    n_instances = instances_length_encoder(sample_id, preprocess.preprocess_response)
+    n_instances = instances_length_encoder(str(sample_id), preprocess.preprocess_response)
     result = {i: np.zeros(1, dtype=np.float32) for i in range(n_instances)}
     if n_instances == 0:
         return result
@@ -359,7 +359,7 @@ def instance_best_iou(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
 def instance_match_confidence(y_pred: np.ndarray, preprocess: SamplePreprocessResponse):
     """Per-GT-instance confidence of the best-matching same-class prediction (0 if unmatched)."""
     sample_id = preprocess.sample_ids[0]
-    n_instances = instances_length_encoder(sample_id, preprocess.preprocess_response)
+    n_instances = instances_length_encoder(str(sample_id), preprocess.preprocess_response)
     result = {i: np.zeros(1, dtype=np.float32) for i in range(n_instances)}
     if n_instances == 0:
         return result
